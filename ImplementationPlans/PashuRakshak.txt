@@ -1,0 +1,1010 @@
+PashuRakshak
+(“Animal Guardian”)
+Product Requirements Document & System Design
+Version 2.0
+Offline-first Edge AI livestock disease detection platform
+
+
+1. Product Requirements Document (PRD)	3
+1.1 Product Overview	3
+1.2 Problem Statement	3
+1.3 Goals & Objectives	3
+1.4 Target Users	3
+1.5 Core Product Requirements	4
+Functional Requirements	4
+Non-Functional Requirements	4
+1.6 Capacity Estimation (Target Scale: 50,000 Farmers)	4
+2. System Design	6
+2.1 Architecture Style	6
+2.2 Technology Stack	6
+2.3 Design Patterns Used	6
+2.4 High-Level Design (HLD)	6
+2.5 Authentication Flow	7
+Option A — Supabase Auth (recommended, fits phone-first users)	7
+Option B — Keep custom JWT (Passport), Supabase as pure Postgres	7
+2.6 Hybrid AI Flow (Server-Side Fallback)	7
+2.7 Data Model — Prisma Schema	7
+2.8 Entity-Relationship Diagram	9
+2.9 PostGIS Query (Prisma Raw SQL)	9
+2.10 Row-Level Security Policies	10
+2.11 Data Flow Diagram (Sequence)	10
+2.12 API Documentation	10
+2.13 Security Review	10
+2.14 Performance & Scalability Review	11
+2.15 Scaling Triggers	11
+2.16 Failure Modes & Graceful Degradation	11
+3. Phase-Wise Development Plan, File Structure & Features	12
+3.1 Monorepo File Structure	12
+3.1 Phase 0 — Foundations (Weeks 1–2)	12
+File / Module Scope	12
+Features & Progress	12
+Testing Features & Progress	12
+3.2 Phase 1 — Core Farmer Flow (Weeks 3–6)	13
+File / Module Scope	13
+Features & Progress	13
+Testing Features & Progress	13
+3.3 Phase 2 — Sync & Backend (Weeks 7–9)	13
+File / Module Scope	14
+Features & Progress	14
+Testing Features & Progress	14
+3.4 Phase 3 — Vet Routing & Admin Dashboard (Weeks 10–12)	14
+File / Module Scope	14
+Features & Progress	14
+Testing Features & Progress	15
+3.5 Phase 4 — ML Microservice & Hardening (Weeks 13–15)	15
+File / Module Scope	15
+Features & Progress	15
+Testing Features & Progress	15
+3.6 Phase 5 — Realtime, CI/CD & Launch Prep (Weeks 16–18)	16
+File / Module Scope	16
+Features & Progress	16
+Testing Features & Progress	16
+4. Consolidated Feature & Testing Tracker	17
+4.1 All Features — Progress Overview	17
+4.2 All Testing Activities — Progress Overview	17
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1. Product Requirements Document (PRD)
+1.1 Product Overview
+PashuRakshak is an offline-first Edge AI system that detects livestock diseases — Lumpy Skin Disease (LSD), Foot-and-Mouth Disease (FMD), and Mastitis — directly on a farmer's phone. It combines on-device CNN inference (MobileNetV2 / EfficientNetB0 via TensorFlow Lite) with a clinical symptom rule engine to produce a hybrid diagnosis, and works fully offline with opportunistic cloud sync.
+1.2 Problem Statement
+Rural farmers often lack immediate veterinary access and reliable internet connectivity. Delays in diagnosing LSD, FMD, and Mastitis drive up livestock mortality and economic loss. PashuRakshak brings diagnostic capability directly to the farmer's phone, working fully offline, and reconciles with the cloud opportunistically once connectivity is restored.
+1.3 Goals & Objectives
+Provide accurate, offline, on-device disease detection for livestock at the point of need.
+Minimise time-to-diagnosis in low-connectivity rural regions.
+Route farmers to the nearest available veterinarian using location-based search.
+Give administrators visibility into regional disease trends via a web dashboard.
+Keep the platform maintainable with a single unified codebase across mobile and web.
+1.4 Target Users
+User
+Needs
+Platform
+Farmer
+Fast, offline, low-literacy-friendly disease detection and vet routing
+Mobile (iOS/Android)
+Veterinarian
+Receive routing requests, view case context
+Mobile/Web
+Admin
+Regional outbreak analytics, vet management, audit visibility
+Web dashboard
+
+1.5 Core Product Requirements
+Functional Requirements
+Offline diagnosis using on-device TFLite inference — no internet required.
+Symptom logging via tabular clinical inputs feeding a rule engine.
+Hybrid inference engine blending 70% vision-model score with 30% symptom-based rule score.
+Multilingual, icon-driven UI for users with low digital literacy.
+Vet routing — nearest-vet lookup via PostGIS geo-proximity search.
+Medicine recommendations from a cached reference dataset.
+Cloud sync — bulk upload of cached predictions once connectivity returns.
+Web admin dashboard for outbreak monitoring and vet management.
+Regional outbreak push/realtime alerts.
+Audit logging of admin data access.
+Non-Functional Requirements
+Availability: core diagnosis must work with zero connectivity.
+Security: JWT/Supabase Auth plus Postgres Row-Level Security as defense in depth.
+Scalability: comfortably support 10,000–50,000 users on the target infrastructure.
+Performance: read-heavy geo queries must be cache-backed; sync bursts must not block the event loop.
+Observability: crash and latency visibility via Sentry/APM.
+Portability: one codebase serving iOS, Android, and Web.
+1.6 Capacity Estimation (Target Scale: 50,000 Farmers)
+Metric
+Estimate
+Basis
+Daily active users
+~5,000 (10% DAU/MAU)
+Typical for a utility app used at symptom onset, not daily
+Predictions/day
+~7,500 (1.5 per active user)
+Most usage is bursty around outbreaks, not steady-state
+Avg image size
+~300 KB (compressed on-device)
+TFLite pipeline already downsamples for inference
+Storage growth
+~2.25 GB/day → ~68 GB/month
+7,500 images × 300 KB
+Peak sync burst
+Up to 500 req/min
+Connectivity returns village-wide after an outage
+/vets/nearby reads
+~5–10x more frequent than writes
+Read-heavy endpoint — the main caching target
+
+
+Takeaway: this is a read-heavy, write-bursty system. The bottleneck is never steady-state load — it is the burst when a village's connectivity comes back and hundreds of devices sync at once.
+
+2. System Design
+2.1 Architecture Style
+Edge-heavy client-server architecture with a managed backend-as-a-service core, plus a dedicated ML microservice for anything the edge model can't do.
+Client: One Expo (React Native + Expo Router) app, compiled to iOS, Android, and Web. Farmer flows are mobile-first; the admin dashboard is a web-optimized route group in the same app.
+Backend: Supabase — Postgres (with PostGIS), Auth, Storage, Realtime — fronted by a thin Node.js/Express layer for logic that doesn't belong in the database (hybrid inference blending, ML microservice orchestration, rate limiting).
+ML: TFLite on-device for offline inference; a small FastAPI microservice for server-side fallback/heavier models.
+2.2 Technology Stack
+Layer
+Technology
+Client (mobile + web)
+Expo (React Native, Expo Router), React Native Web, Vision Camera (native), <input capture> fallback on web, i18next
+Local storage
+Expo SQLite / AsyncStorage (mobile), IndexedDB shim (web)
+Shared UI
+Custom component package built on Tailwind-equivalent tokens (NativeWind), shared across mobile & web builds
+Backend API
+Node.js, Express.js, Prisma Client
+Database
+Supabase Postgres (PostGIS extension enabled)
+ORM / schema
+Prisma (schema.prisma, Prisma Migrate, Prisma Client)
+Auth
+Supabase Auth (phone OTP) or Passport-issued JWT verified against Supabase
+File storage
+Supabase Storage (prediction images)
+Realtime
+Supabase Realtime (outbreak alerts, sync status)
+AI/ML
+TensorFlow Lite (on-device), ONNX, FastAPI microservice (server fallback)
+Cache
+Redis (vet lookups, medicine reference data)
+
+2.3 Design Patterns Used
+Offline-first sync: optimistic local writes, background reconciliation.
+Hybrid inference: vision-model score (70%) blended with symptom-based rule score (30%).
+Route-group-based platform splitting: Expo Router groups ((farmer), (admin)) instead of two separate apps.
+Database-enforced authorization: Postgres RLS policies as a second layer under the API's own auth checks.
+2.4 High-Level Design (HLD)
+graph TD
+subgraph "Expo App (iOS / Android / Web)"
+M["Expo Router - (farmer) routes"]
+A["Expo Router - (admin) routes"]
+EAI[TFLite Inference Engine]
+LS[(Local SQLite / IndexedDB)]
+M <--> EAI
+M <--> LS
+end
+subgraph "Supabase"
+AUTH[Supabase Auth]
+STORE[Supabase Storage]
+RT[Supabase Realtime]
+DB[(Postgres + PostGIS)]
+end
+subgraph "Backend Services"
+API[Node.js + Express + Prisma Client]
+ML[FastAPI ML microservice]
+REDIS[(Redis Cache)]
+end
+M -- "REST/JWT sync" --> API
+A -- "REST/JWT admin queries" --> API
+API <--> AUTH
+API -- "Prisma Client" --> DB
+API <--> REDIS
+API -- "server-side fallback inference" --> ML
+M -- "image upload" --> STORE
+DB -- "outbreak change events" --> RT
+RT -- "push" --> M
+
+2.5 Authentication Flow
+Option A — Supabase Auth (recommended, fits phone-first users)
+Farmer requests OTP via supabase.auth.signInWithOtp({ phone }).
+Supabase sends SMS OTP, verifies, returns a session JWT.
+Client stores the Supabase session (SecureStore on native, encrypted storage on web).
+Express API verifies the Supabase JWT on each request using Supabase's JWT secret.
+RLS policies use auth.uid() directly — no separate user-id mapping needed.
+Option B — Keep custom JWT (Passport), Supabase as pure Postgres
+Same flow as v1 (bcrypt.compare → jsonwebtoken), but users table is managed by Prisma against Supabase Postgres.
+RLS policies then need a custom claim (via a Postgres function reading a signed JWT claim) since auth.uid() won't be populated.
+Option A removes an entire subsystem (Passport, bcrypt, custom token issuance) and is the lower-maintenance path — flagged as the default recommendation.
+2.6 Hybrid AI Flow (Server-Side Fallback)
+Image uploaded to Supabase Storage; the API receives the storage path (not the raw file).
+API calls the FastAPI ML microservice over HTTP with the storage path.
+ML service downloads the image, runs inference, returns confidence scores.
+API applies the clinical rule engine (rulesEngineService.js).
+Scores blended (70% vision / 30% symptoms) and written via Prisma Client.
+2.7 Data Model — Prisma Schema
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // pooled connection (PgBouncer, port 6543)
+  directUrl = env("DIRECT_URL")     // direct connection, used only for migrations
+}
+ 
+generator client {
+  provider = "prisma-client-js"
+}
+ 
+enum Role {
+  FARMER
+  VET
+  ADMIN
+}
+ 
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  phone       String   @unique
+  role        Role     @default(FARMER)
+  createdAt   DateTime @default(now())
+  predictions Prediction[]
+}
+ 
+model Prediction {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  disease     String
+  confidence  Decimal
+  riskLevel   String
+  imagePath   String?   // Supabase Storage object path, not a bare URL
+  createdAt   DateTime  @default(now())
+  syncedAt    DateTime?
+  symptom     Symptom?
+  @@index([userId])
+}
+ 
+model Symptom {
+  id            String     @id @default(uuid())
+  predictionId  String     @unique
+  prediction    Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+  symptomData   Json
+}
+ 
+model Medicine {
+  id                 String @id @default(uuid())
+  diseaseKey         String
+  name               String
+  usageInstructions  String
+}
+ 
+model Vet {
+  id        String  @id @default(uuid())
+  name      String
+  phone     String
+  latitude  Float
+  longitude Float
+  // PostGIS geography column -- Prisma has no native geo type
+  location  Unsupported("geography(Point, 4326)")?
+}
+
+2.8 Entity-Relationship Diagram
+erDiagram
+USERS {
+  string id PK
+  string name
+  string phone UK
+  string role
+  timestamp created_at
+}
+PREDICTIONS {
+  string id PK
+  string user_id FK
+  string disease
+  numeric confidence
+  string risk_level
+  string image_path
+  timestamp created_at
+  timestamp synced_at
+}
+SYMPTOMS {
+  string id PK
+  string prediction_id FK
+  jsonb symptom_data
+}
+MEDICINES {
+  string id PK
+  string disease_key
+  string name
+  text usage_instructions
+}
+VETS {
+  string id PK
+  string name
+  string phone
+  numeric latitude
+  numeric longitude
+  geography location
+}
+USERS ||--o{ PREDICTIONS : "makes"
+PREDICTIONS ||--o| SYMPTOMS : "has"
+
+2.9 PostGIS Query (Prisma Raw SQL)
+Prisma Client has no query builder for geography types. The location column is declared Unsupported(...) so migrations can create it, but nearby-vet lookups must go through raw SQL. A GIST index on location is mandatory — without it this query becomes a full table scan.
+const nearbyVets = await prisma.$queryRaw`
+  SELECT id, name, phone,
+    ST_Distance(location, ST_MakePoint(${lng}, ${lat})::geography) AS distance_m
+  FROM "Vet"
+  WHERE ST_DWithin(location, ST_MakePoint(${lng}, ${lat})::geography, 25000)
+  ORDER BY distance_m
+  LIMIT 10;
+`;
+
+2.10 Row-Level Security Policies
+alter table "Prediction" enable row level security;
+ 
+create policy "Users see only their own predictions"
+on "Prediction" for select
+using (auth.uid()::text = "userId");
+ 
+create policy "Admins see everything"
+on "Prediction" for select
+using (exists (
+  select 1 from "User" u where u.id = auth.uid()::text and u.role = 'ADMIN'
+));
+
+2.11 Data Flow Diagram (Sequence)
+sequenceDiagram
+participant Farmer as Farmer (Expo App)
+participant Edge as Edge AI (TFLite)
+participant Local as Local SQLite
+participant API as Node.js API (Prisma)
+participant SB as Supabase (Postgres/Storage)
+Farmer->>Edge: Capture photo + symptoms
+Edge-->>Farmer: Local result (offline)
+Farmer->>Local: Save record internally
+Note over Farmer,API: ... connectivity restored ...
+Farmer->>SB: Upload image to Storage
+Farmer->>API: POST /predict/sync (record + storage path)
+API->>SB: Prisma Client insert (Postgres)
+SB-->>API: Confirm
+API-->>Farmer: 201 Created (synced = true)
+Farmer->>Local: Mark record as synced
+
+2.12 API Documentation
+Endpoint
+Method
+Purpose
+Auth
+Notes
+/auth/otp/request
+POST
+Request phone OTP
+None
+Rate-limit aggressively
+/auth/otp/verify
+POST
+Verify OTP, issue session
+None
+Delegates to Supabase Auth
+/predict/sync
+POST
+Bulk upload offline records
+JWT
+Written via Prisma; large arrays should be chunked to avoid blocking the event loop
+/predict/analyze
+POST
+Server-side fallback inference
+JWT
+Calls the FastAPI microservice over HTTP
+/vets/nearby
+GET
+PostGIS proximity query
+JWT
+Needs GIST index; cache in Redis, keyed by rounded lat/lng
+/medicines
+GET
+Reference data
+JWT
+Fully static — Redis-cacheable with a long TTL
+
+2.13 Security Review
+Auth: Supabase Auth handles token issuance/rotation/revocation.
+RLS: Postgres-level policies as a second layer under API checks.
+Rate limiting: add express-rate-limit on /auth/* and /predict/analyze.
+Command injection: eliminated by removing child_process.spawn in favor of an HTTP call to the FastAPI microservice.
+Input validation: add Zod schemas on all API inputs.
+Storage access: Supabase Storage buckets for prediction images should be private, served via signed URLs with short expiry.
+2.14 Performance & Scalability Review
+Connection pooling: Supabase's built-in PgBouncer — Prisma uses the pooled DATABASE_URL (port 6543) for runtime queries and directUrl (port 5432) for migrations.
+PostGIS: a GIST index on Vet.location is mandatory; without it, ST_DWithin queries force full table scans.
+ML inference: a standalone FastAPI microservice lets the API scale independently of inference load.
+Caching: Redis in front of /vets/nearby and /medicines — these are either static or change infrequently.
+2.15 Scaling Triggers
+Signal
+Action
+Redis cache hit rate drops / Postgres CPU rises during sync bursts
+Add a read replica for /vets/nearby and admin dashboard queries, keep writes on the primary
+FastAPI ML service p95 latency climbs under load
+Scale it horizontally (it's stateless) behind a load balancer
+/predict/sync batches start timing out
+Move sync processing to a queue (Postgres-backed job table or lightweight queue)
+Supabase project approaches plan limits (connections, storage)
+Evaluate a paid tier bump before anything architectural
+
+2.16 Failure Modes & Graceful Degradation
+Supabase unreachable: the app is offline-first by design — farmers keep diagnosing locally; sync queues until connectivity + Supabase are both back.
+Partial sync failure (batch of 20, 3 fail): /predict/sync reports per-record success/failure, not all-or-nothing.
+ML microservice down: /predict/analyze fails over to “on-device result stands as final” rather than blocking the farmer.
+Redis down: reads fall through to Postgres directly (slower, not broken) — cache is an optimization layer, never a hard dependency.
+
+3. Phase-Wise Development Plan, File Structure & Features
+3.1 Monorepo File Structure
+pashurakshak/
+├── app/                      # Expo Router (universal: iOS, Android, Web)
+│   ├── (farmer)/             # Mobile-first flows: capture, diagnose, sync
+│   ├── (admin)/              # Web-optimized dashboard routes, role-gated
+│   └── _layout.tsx
+├── packages/
+│   ├── ui/                   # Shared components (NativeWind), used by both route groups
+│   ├── database/             # Prisma schema, migrations, generated client
+│   └── shared-types/         # DTOs shared between client and API
+├── server/
+│   ├── src/
+│   │   ├── routes/
+│   │   ├── controllers/
+│   │   ├── services/         # rulesEngineService.js, mlClientService.js
+│   │   ├── middlewares/
+│   │   └── prisma/           # Prisma client instantiation
+├── ml-service/                # FastAPI server-side fallback inference
+└── supabase/                  # supabase CLI config + SQL for extensions/RLS
+
+3.1 Phase 0 — Foundations (Weeks 1–2)
+File / Module Scope
+supabase/                  # PostGIS enabled, local dev via Supabase CLI
+app/_layout.tsx             # Expo Router root scaffold
+app/(farmer)/                # route group stub
+app/(admin)/                 # route group stub
+packages/ui/                 # shared component package init
+packages/database/schema.prisma
+
+Features & Progress
+Feature
+Description
+Status
+Progress
+Supabase project setup
+Stand up Supabase project, enable PostGIS extension
+Not Started
+0%
+Local dev environment
+Local dev via Supabase CLI (supabase start)
+Not Started
+0%
+Expo Router monorepo scaffold
+(farmer) and (admin) route groups, shared packages/ui
+Not Started
+0%
+Prisma schema authoring
+Write schema.prisma from existing ER model
+Not Started
+0%
+First migration
+Run first prisma migrate dev against Supabase
+Not Started
+0%
+Auth strategy decision
+Decide Option A (Supabase Auth) vs Option B (custom JWT)
+Not Started
+0%
+
+
+Testing Features & Progress
+Testing Feature
+Description
+Status
+Progress
+Environment smoke test
+Verify Supabase CLI, Postgres, PostGIS extension load locally
+Not Started
+0%
+Schema migration test
+Confirm prisma migrate dev applies cleanly with no drift
+Not Started
+0%
+Monorepo build test
+Verify Expo app builds for iOS/Android/Web from scaffold
+Not Started
+0%
+
+
+3.2 Phase 1 — Core Farmer Flow (Weeks 3–6)
+File / Module Scope
+app/(farmer)/capture/        # image capture screen
+app/(farmer)/diagnose/       # TFLite inference + symptom logging
+app/(farmer)/sync/           # local sync status screen
+packages/database/            # local SQLite persistence layer
+
+Features & Progress
+Feature
+Description
+Status
+Progress
+On-device TFLite inference
+Port on-device inference into the new Expo app
+Not Started
+0%
+Symptom logging
+Port symptom logging UI and rule inputs into Expo app
+Not Started
+0%
+Local SQLite persistence
+Offline record storage for predictions/symptoms
+Not Started
+0%
+Auth flow (mobile)
+OTP or JWT flow end-to-end on mobile per Phase 0 decision
+Not Started
+0%
+Image capture pipeline
+Capture → local cache → Supabase Storage upload path
+Not Started
+0%
+
+
+Testing Features & Progress
+Testing Feature
+Description
+Status
+Progress
+TFLite inference unit tests
+Validate model output against known sample images
+Not Started
+0%
+Rule engine table-driven tests
+Cover every entry in SYMPTOM_DISEASE_MAP incl. edge cases
+Not Started
+0%
+Offline persistence tests
+Verify records persist and survive app close/reopen offline
+Not Started
+0%
+Auth flow integration test
+Full OTP/JWT request → verify → session issuance
+Not Started
+0%
+
+
+3.3 Phase 2 — Sync & Backend (Weeks 7–9)
+File / Module Scope
+server/src/routes/predict.js
+server/src/controllers/predictController.js
+server/src/services/rulesEngineService.js
+supabase/rls/prediction_policies.sql
+server/src/middlewares/rateLimiter.js
+
+Features & Progress
+Feature
+Description
+Status
+Progress
+Batched sync endpoint
+/predict/sync using Prisma createMany, per-record success/failure reporting
+Not Started
+0%
+RLS policies
+Row-Level Security on Prediction/Symptom tables
+Not Started
+0%
+Rate limiting
+express-rate-limit on /auth/* and sync endpoints
+Not Started
+0%
+Medicine reference data
+Static reference dataset with Redis caching
+Not Started
+0%
+
+
+Testing Features & Progress
+Testing Feature
+Description
+Status
+Progress
+Sync flow integration test
+Batch with mixed valid/invalid records; assert partial success reporting
+Not Started
+0%
+RLS automated tests
+Attempt cross-user reads with a non-admin session; assert rejection at DB level
+Not Started
+0%
+Rate limit test
+Verify throttling triggers correctly on auth/sync endpoints
+Not Started
+0%
+Redis cache test
+Verify /medicines served from cache with correct TTL/invalidation
+Not Started
+0%
+
+
+3.4 Phase 3 — Vet Routing & Admin Dashboard (Weeks 10–12)
+File / Module Scope
+server/src/routes/vets.js
+server/src/services/vetLookupService.js   # raw PostGIS query
+app/(admin)/analytics/
+app/(admin)/vets/
+server/src/middlewares/auditLogger.js
+
+Features & Progress
+Feature
+Description
+Status
+Progress
+Vet proximity search
+GIST index + raw PostGIS query for /vets/nearby, Redis-cached
+Not Started
+0%
+Admin analytics routes
+(admin) route group: outbreak analytics dashboard
+Not Started
+0%
+Vet management UI
+(admin) route group: vet management, reusing shared packages/ui
+Not Started
+0%
+Audit logging
+Track admin data access for compliance
+Not Started
+0%
+
+
+Testing Features & Progress
+Testing Feature
+Description
+Status
+Progress
+Vet lookup accuracy test
+Seed known vet coordinates; assert /vets/nearby returns correct distance order
+Not Started
+0%
+GIST index performance test
+Confirm indexed query avoids full table scan under load
+Not Started
+0%
+Admin dashboard E2E test
+Playwright test covering analytics and vet management flows
+Not Started
+0%
+Audit log verification test
+Confirm every admin data access is recorded
+Not Started
+0%
+
+
+3.5 Phase 4 — ML Microservice & Hardening (Weeks 13–15)
+File / Module Scope
+ml-service/                  # FastAPI server-side fallback inference
+server/src/services/mlClientService.js
+server/src/middlewares/validation/         # Zod schemas
+server/src/config/sentry.js
+
+Features & Progress
+Feature
+Description
+Status
+Progress
+FastAPI ML microservice extraction
+Wire /predict/analyze to call FastAPI over HTTP
+Not Started
+0%
+Input validation
+Zod validation middleware across all endpoints
+Not Started
+0%
+Crash/error monitoring
+Sentry integration for mobile crashes and API errors
+Not Started
+0%
+
+
+Testing Features & Progress
+Testing Feature
+Description
+Status
+Progress
+ML microservice contract tests
+Contract tests between Express API and FastAPI service
+Not Started
+0%
+Validation middleware tests
+Confirm malformed payloads are rejected with clear errors
+Not Started
+0%
+Dependency security scan
+npm audit and pip-audit for the ML service in CI
+Not Started
+0%
+ML microservice soak test
+Independent load/soak test to find its scaling ceiling
+Not Started
+0%
+
+
+3.6 Phase 5 — Realtime, CI/CD & Launch Prep (Weeks 16–18)
+File / Module Scope
+.github/workflows/deploy.yml   # prisma migrate deploy + EAS Build
+server/src/services/realtimeService.js
+app/(farmer)/notifications/
+eas.json
+
+Features & Progress
+Feature
+Description
+Status
+Progress
+Realtime outbreak alerts
+Supabase Realtime → Expo Notifications for outbreak alerts
+Not Started
+0%
+CI/CD pipeline
+GitHub Actions: prisma migrate deploy + EAS Build for iOS/Android/Web
+Not Started
+0%
+Load testing & tuning
+Load test against §1.6 capacity estimates; tune cache TTLs and pool sizes
+Not Started
+0%
+
+
+Testing Features & Progress
+Testing Feature
+Description
+Status
+Progress
+Offline-first E2E flow test
+Airplane-mode capture → diagnosis → reconnect → confirm sync completes
+Not Started
+0%
+Cross-platform parity E2E
+Detox (native) + Playwright (web) suite across (farmer) and (admin) flows
+Not Started
+0%
+Load test — /predict/sync
+Burst rate test at 500 req/min via k6, watching connection pool saturation
+Not Started
+0%
+Load test — /vets/nearby
+With and without Redis cache warmed, to quantify actual benefit
+Not Started
+0%
+Penetration test
+OTP/JWT flow tested for rate-limiting and brute-force resistance before launch
+Not Started
+0%
+
+
+
+4. Consolidated Feature & Testing Tracker
+4.1 All Features — Progress Overview
+Feature
+Description
+Status
+Progress
+Supabase project & PostGIS setup
+Phase 0 — infra foundation
+Not Started
+0%
+Expo Router monorepo scaffold
+Phase 0 — codebase foundation
+Not Started
+0%
+Prisma schema & first migration
+Phase 0 — data model foundation
+Not Started
+0%
+Auth strategy decision
+Phase 0 — gates later phases
+Not Started
+0%
+On-device TFLite inference
+Phase 1 — core diagnosis capability
+Not Started
+0%
+Symptom logging
+Phase 1 — core diagnosis capability
+Not Started
+0%
+Local SQLite persistence
+Phase 1 — offline support
+Not Started
+0%
+Mobile auth flow
+Phase 1 — user access
+Not Started
+0%
+Image capture → Storage upload
+Phase 1 — media pipeline
+Not Started
+0%
+Batched /predict/sync endpoint
+Phase 2 — sync reliability
+Not Started
+0%
+RLS policies
+Phase 2 — database-level security
+Not Started
+0%
+Rate limiting
+Phase 2 — abuse protection
+Not Started
+0%
+Medicine reference data + Redis cache
+Phase 2 — performance
+Not Started
+0%
+Vet proximity search (PostGIS + GIST)
+Phase 3 — vet routing
+Not Started
+0%
+Admin analytics dashboard
+Phase 3 — admin visibility
+Not Started
+0%
+Vet management UI
+Phase 3 — admin tooling
+Not Started
+0%
+Audit logging
+Phase 3 — compliance
+Not Started
+0%
+FastAPI ML microservice
+Phase 4 — server-side fallback inference
+Not Started
+0%
+Zod input validation
+Phase 4 — hardening
+Not Started
+0%
+Sentry crash/error monitoring
+Phase 4 — observability
+Not Started
+0%
+Realtime outbreak alerts
+Phase 5 — notifications
+Not Started
+0%
+CI/CD pipeline (EAS + GitHub Actions)
+Phase 5 — DevOps
+Not Started
+0%
+Load testing & tuning
+Phase 5 — launch readiness
+Not Started
+0%
+
+
+4.2 All Testing Activities — Progress Overview
+Testing Feature
+Description
+Status
+Progress
+Environment smoke test
+Phase 0
+Not Started
+0%
+Schema migration test
+Phase 0
+Not Started
+0%
+Monorepo build test
+Phase 0
+Not Started
+0%
+TFLite inference unit tests
+Phase 1
+Not Started
+0%
+Rule engine table-driven tests
+Phase 1
+Not Started
+0%
+Offline persistence tests
+Phase 1
+Not Started
+0%
+Auth flow integration test
+Phase 1
+Not Started
+0%
+Sync flow integration test
+Phase 2
+Not Started
+0%
+RLS automated tests
+Phase 2
+Not Started
+0%
+Rate limit test
+Phase 2
+Not Started
+0%
+Redis cache test
+Phase 2
+Not Started
+0%
+Vet lookup accuracy test
+Phase 3
+Not Started
+0%
+GIST index performance test
+Phase 3
+Not Started
+0%
+Admin dashboard E2E test
+Phase 3
+Not Started
+0%
+Audit log verification test
+Phase 3
+Not Started
+0%
+ML microservice contract tests
+Phase 4
+Not Started
+0%
+Validation middleware tests
+Phase 4
+Not Started
+0%
+Dependency security scan
+Phase 4
+Not Started
+0%
+ML microservice soak test
+Phase 4
+Not Started
+0%
+Offline-first E2E flow test
+Phase 5
+Not Started
+0%
+Cross-platform parity E2E
+Phase 5
+Not Started
+0%
+Load test — /predict/sync
+Phase 5
+Not Started
+0%
+Load test — /vets/nearby
+Phase 5
+Not Started
+0%
+Penetration test
+Phase 5
+Not Started
+0%
+
+
+
