@@ -15,12 +15,12 @@
 ## 🛠️ Implementation Steps
 
 ### 1. Auth Flow (Mobile)
-* **Goal:** Implement end-to-end authentication (OTP or JWT) for the mobile app based on the Phase 0 decision.
+* **Goal:** Implement end-to-end custom JWT authentication using Passport.js backed by Supabase PostgreSQL.
 * **Tasks:**
-  - Setup login/OTP screen in the `(farmer)` route group.
-  - Integrate Supabase Auth (or custom JWT client code) to handle OTP requests and verification.
-  - Securely store the session token using `SecureStore` (Expo) or an equivalent for local retention.
-  - Setup a context provider/middleware to manage auth state across the app.
+  - Setup login/registration screens in the `(farmer)` route group.
+  - Implement custom API calls to the Passport.js authentication backend to obtain JWTs.
+  - Securely store the JWT session token using `SecureStore` (Expo) or an equivalent for local retention.
+  - Setup a context provider/middleware to manage auth state and attach the JWT to protected API requests.
 
 ### 2. Local SQLite Persistence
 * **Goal:** Set up local, offline record storage for predictions and symptoms.
@@ -59,8 +59,8 @@
 ## 🧪 Testing Plan
 
 ### 1. Auth Flow Integration Test
-- Full OTP/JWT request flow.
-- Verify OTP submission and successful session token issuance and local storage.
+- Full Passport.js custom JWT request flow.
+- Verify credentials submission, successful JWT token issuance, and local storage.
 
 ### 2. Offline Persistence Tests
 - Verify that records (predictions and symptoms) persist accurately.
@@ -77,7 +77,7 @@
 ---
 
 ## 🚦 Definition of Done for Phase 1
-- [ ] A user can log in via OTP/JWT and persist their session.
+- [ ] A user can log in via custom JWT (Passport.js) and persist their session.
 - [ ] A user can open the camera, capture a livestock image, and see it in the app.
 - [ ] A user can select clinical symptoms.
 - [ ] The app successfully runs the TFLite model and rule engine to generate a blended diagnosis **entirely offline**.

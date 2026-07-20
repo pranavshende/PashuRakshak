@@ -1,0 +1,59 @@
+datasource db {
+  provider  = "postgresql"
+}
+ 
+generator client {
+  provider = "prisma-client-js"
+}
+ 
+enum Role {
+  FARMER
+  VET
+  ADMIN
+}
+ 
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  phone       String   @unique
+  password    String   // Required for Passport Local strategy
+  role        Role     @default(FARMER)
+  createdAt   DateTime @default(now())
+  predictions Prediction[]
+}
+ 
+model Prediction {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  disease     String
+  confidence  Decimal
+  riskLevel   String
+  imagePath   String?
+  createdAt   DateTime  @default(now())
+  syncedAt    DateTime?
+  symptom     Symptom?
+  @@index([userId])
+}
+ 
+model Symptom {
+  id            String     @id @default(uuid())
+  predictionId  String     @unique
+  prediction    Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+  symptomData   Json
+}
+ 
+model Medicine {
+  id                 String @id @default(uuid())
+  diseaseKey         String
+  name               String
+  usageInstructions  String
+}
+ 
+model Vet {
+  id        String  @id @default(uuid())
+  name      String
+  phone     String
+  latitude  Float
+  longitude Float
+}
