@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { API_BASE_URL } from '../../config/api';
 
 export default function FarmScoreScreen() {
   const [data, setData] = useState<any>(null);
@@ -15,7 +16,7 @@ export default function FarmScoreScreen() {
   const fetchScore = async () => {
     try {
       const token = localStorage.getItem('userToken');
-      const res = await fetch('http://127.0.0.1:5000/farm/score', {
+      const res = await fetch(`${API_BASE_URL}/farm/score`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();

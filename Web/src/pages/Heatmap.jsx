@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Activity, Sliders } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function Heatmap() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export default function Heatmap() {
     setLoading(true);
     try {
       const endpoint = showPredictions ? 'predict' : `historical?days=${days}`;
-      const res = await fetch(`http://localhost:5000/outbreaks/${endpoint}`);
+      const res = await fetch(`${API_BASE_URL}/outbreaks/${endpoint}`);
       const json = await res.json();
       if (json.data) setData(json.data);
     } catch (e) {

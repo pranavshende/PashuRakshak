@@ -22,8 +22,8 @@ router.post('/analyze', requireAuth, upload.single('file'), async (req, res) => 
     // Append the file buffer. We must provide a filename so FastAPI recognizes it as a file upload.
     form.append('file', req.file.buffer, req.file.originalname || 'image.jpg');
 
-    // Make the request to the local FastAPI service (running on port 8000)
-    // NOTE: In production, this URL should be an environment variable (e.g., process.env.ML_SERVICE_URL)
+    // ML service is bundled inside the Backend (Backend/mlservice) and runs on port 8000
+    // This is an internal server-to-server call — not exposed to the frontend directly
     const mlServiceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000/predict';
     
     const response = await axios.post(mlServiceUrl, form, {

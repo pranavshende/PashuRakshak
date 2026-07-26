@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Bot, User } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function Chat() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/chat', {
+      const res = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

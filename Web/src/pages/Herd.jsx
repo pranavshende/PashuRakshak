@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Tag, Calendar, Weight } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function Herd() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function Herd() {
   const fetchAnimals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/animals', {
+      const res = await fetch(`${API_BASE_URL}/animals`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -32,7 +33,7 @@ export default function Herd() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/animals', {
+      const res = await fetch(`${API_BASE_URL}/animals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

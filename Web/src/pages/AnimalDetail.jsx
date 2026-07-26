@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Syringe, Activity, CheckCircle } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function AnimalDetail() {
   const { id } = useParams();
@@ -15,7 +16,7 @@ export default function AnimalDetail() {
   const fetchAnimal = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/animals/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/animals/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -30,7 +31,7 @@ export default function AnimalDetail() {
   const handleRecovery = async (predictionId, status) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/predict/${predictionId}/recovery`, {
+      await fetch(`${API_BASE_URL}/predict/${predictionId}/recovery`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

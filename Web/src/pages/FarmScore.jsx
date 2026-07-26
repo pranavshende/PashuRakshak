@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, ShieldCheck, Heart, Droplets } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function FarmScore() {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ export default function FarmScore() {
   const fetchScore = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/farm/score', {
+      const res = await fetch(`${API_BASE_URL}/farm/score`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();

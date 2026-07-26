@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Camera, Activity, AlertTriangle, Pill, Settings, MessageSquare, Map, TrendingUp, Cow } from 'lucide-react';
+import { LogOut, Camera, Activity, AlertTriangle, Pill, Settings, MessageSquare, Map, TrendingUp, PawPrint } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -53,7 +53,7 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
         
         <div onClick={() => navigate('/herd')} style={styles.moduleCard}>
-          <Cow size={24} color="#10B981" />
+          <PawPrint size={24} color="#10B981" />
           <div>
             <strong style={styles.cardTitle}>My Herd (Digital Twins)</strong>
             <p style={styles.cardDesc}>Animal profiles & records</p>
