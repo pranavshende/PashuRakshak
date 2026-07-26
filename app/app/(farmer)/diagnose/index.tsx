@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { savePredictionLocally } from '../../database/localDb';
 import * as FileSystem from 'expo-file-system';
-import { Platform } from 'react-native';
+import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
+import Animated, { FadeInDown, FadeInUp, withRepeat, withSequence, withTiming, useSharedValue, useAnimatedStyle, Easing } from 'react-native-reanimated';
 
 let useTensorflowModel = (asset: any, delegate?: string) => ({ model: null });
 if (Platform.OS !== 'web') {
@@ -23,6 +24,33 @@ const SYMPTOMS_LIST = [
   { id: 'mouth_ulcers', label: 'Mouth Ulcers' }
 ];
 
+const SkeletonLoader = () => {
+  const opacity = useSharedValue(0.4);
+
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.4, { duration: 800, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  return (
+    <View style={styles.skeletonContainer}>
+      <Animated.View style={[styles.skeletonImage, animatedStyle]} />
+      <Animated.View style={[styles.skeletonText, animatedStyle, { width: '80%' }]} />
+      <Animated.View style={[styles.skeletonText, animatedStyle, { width: '60%', height: 16 }]} />
+    </View>
+  );
+};
+
 export default function DiagnoseScreen() {
   const { imageUri } = useLocalSearchParams();
   const router = useRouter();
@@ -30,7 +58,6 @@ export default function DiagnoseScreen() {
   const [selectedSymptoms, setSelectedSymptoms] = useState<Record<string, boolean>>({});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  // Load TFLite Model
   const plugin = useTensorflowModel(require('../../../assets/cattlecare_v1.tflite'), 'default');
 
   const toggleSymptom = (id: string) => {
@@ -38,19 +65,16 @@ export default function DiagnoseScreen() {
   };
 
   const calculateRuleScore = () => {
-    // Advanced Weighted Matrix Rule Engine
     let lsdScore = 0;
     let fmdScore = 0;
     let mastitisScore = 0;
     
-    // Core critical symptoms (High weight)
     if (selectedSymptoms['blisters']) lsdScore += 0.8;
     if (selectedSymptoms['salivation']) fmdScore += 0.6;
     if (selectedSymptoms['mouth_ulcers']) fmdScore += 0.7;
     if (selectedSymptoms['lameness']) fmdScore += 0.3;
     if (selectedSymptoms['swelling']) mastitisScore += 0.9;
     
-    // Generic symptoms (Low weight, additive)
     if (selectedSymptoms['fever']) { lsdScore += 0.15; fmdScore += 0.15; mastitisScore += 0.1; }
     if (selectedSymptoms['loss_appetite']) { lsdScore += 0.1; fmdScore += 0.1; mastitisScore += 0.1; }
     if (selectedSymptoms['nasal_discharge']) { lsdScore += 0.2; fmdScore += 0.1; }
@@ -64,7 +88,7 @@ export default function DiagnoseScreen() {
   };
 
   const handleDiagnose = async () => {
-    if (!plugin.model) {
+    if (!plugin.model && Platform.OS !== 'web') {
       Alert.alert("Model not ready", "The AI model is still loading.");
       return;
     }
@@ -79,14 +103,27 @@ export default function DiagnoseScreen() {
       let mockVisionConfidence = 0.85; 
       let mockVisionDisease = 'Lumpy Skin Disease';
 
-      if (Platform.OS === 'web') {
-        // Web Fallback: Hit backend API
+      if (!plugin.model) {
         const token = localStorage.getItem('userToken');
         const formData = new FormData();
-        // Just send a dummy string or fetch the blob if we have object URL
-        formData.append('file', new Blob(['dummy content']), 'image.jpg');
         
-        const res = await fetch('http://127.0.0.1:5000/predict/analyze', {
+        if (Platform.OS === 'web') {
+          try {
+            const blobRes = await fetch(imageUri as string);
+            const blob = await blobRes.blob();
+            formData.append('file', blob, 'image.jpg');
+          } catch (e) {
+            formData.append('file', new Blob(['dummy content']), 'image.jpg');
+          }
+        } else {
+          formData.append('file', {
+            uri: Platform.OS === 'android' ? imageUri : (imageUri as string).replace('file://', ''),
+            type: 'image/jpeg',
+            name: 'image.jpg',
+          } as any);
+        }
+        
+        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/predict/analyze`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formData
@@ -95,17 +132,13 @@ export default function DiagnoseScreen() {
         if (data.prediction) {
           mockVisionConfidence = data.prediction.confidence;
           mockVisionDisease = data.prediction.label;
+        } else if (data.error) {
+          throw new Error(data.error);
         }
       } else {
-        // 1. Run TFLite Inference
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate inference time
+        await new Promise(resolve => setTimeout(resolve, 2500)); // Simulate inference time slightly longer for animation
       }
 
-      // 2. Run Symptom Rule Engine
-      const ruleScores = calculateRuleScore();
-      
-      // 3. Hybrid Blending (AI Output + Rule Engine)
-      // Base calculation: We find the highest scoring rule disease to match against the vision model
       const { lsdScore, fmdScore, mastitisScore } = calculateRuleScore();
       
       let finalDisease = mockVisionDisease;
@@ -118,7 +151,6 @@ export default function DiagnoseScreen() {
       } else if (mockVisionDisease === 'Mastitis') {
         finalConfidence = (mockVisionConfidence * 0.6) + (mastitisScore * 0.4);
       } else {
-        // If vision is unsure, fallback heavily to rules
         if (lsdScore > 0.6) { finalDisease = 'Lumpy Skin Disease'; finalConfidence = lsdScore; }
         else if (fmdScore > 0.6) { finalDisease = 'FMD'; finalConfidence = fmdScore; }
         else if (mastitisScore > 0.6) { finalDisease = 'Mastitis'; finalConfidence = mastitisScore; }
@@ -132,14 +164,13 @@ export default function DiagnoseScreen() {
         imagePath: typeof imageUri === 'string' ? imageUri : '',
       };
 
-      // 4. Save Locally
       await savePredictionLocally(result, selectedSymptoms);
 
       Alert.alert(
         "Diagnosis Complete", 
         `Disease: ${result.disease}\nConfidence: ${(result.confidence * 100).toFixed(1)}%\n\nRecord saved offline.`,
         [
-          { text: "OK", onPress: () => router.replace('/(farmer)' as any) }
+          { text: "View Results", onPress: () => router.replace('/(farmer)' as any) }
         ]
       );
       
@@ -151,59 +182,100 @@ export default function DiagnoseScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.headerTitle}>Clinical Diagnosis</Text>
-      
-      {imageUri ? (
-        <Image source={{ uri: imageUri as string }} style={styles.imagePreview} />
-      ) : (
-        <View style={styles.imagePlaceholder}><Text>No image</Text></View>
-      )}
-
-      <Text style={styles.sectionTitle}>Select Symptoms</Text>
-      <View style={styles.symptomsContainer}>
-        {SYMPTOMS_LIST.map(sym => (
-          <TouchableOpacity 
-            key={sym.id} 
-            style={[styles.symptomChip, selectedSymptoms[sym.id] && styles.symptomChipSelected]}
-            onPress={() => toggleSymptom(sym.id)}
-          >
-            <Text style={[styles.symptomText, selectedSymptoms[sym.id] && styles.symptomTextSelected]}>
-              {sym.label}
-            </Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} disabled={isAnalyzing}>
+            <FontAwesome name="arrow-left" size={20} color={COLORS.textMain} />
           </TouchableOpacity>
-        ))}
+          <Text style={styles.headerTitle}>Clinical Diagnosis</Text>
+        </View>
       </View>
-
-      <TouchableOpacity 
-        style={[styles.btn, (!plugin.model && Platform.OS !== 'web' || isAnalyzing) && styles.btnDisabled]} 
-        onPress={handleDiagnose}
-        disabled={!plugin.model && Platform.OS !== 'web' || isAnalyzing}
-      >
+      
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {isAnalyzing ? (
-          <ActivityIndicator color="#fff" />
+          <Animated.View entering={FadeInDown}>
+            <View style={GLOBAL_STYLES.card}>
+              <Text style={[TYPOGRAPHY.h2, { textAlign: 'center', marginBottom: SPACING.md }]}>AI is Analyzing...</Text>
+              <SkeletonLoader />
+            </View>
+          </Animated.View>
         ) : (
-          <Text style={styles.btnText}>
-            {(plugin.model || Platform.OS === 'web') ? 'Run Diagnosis' : 'Loading AI Model...'}
-          </Text>
+          <>
+            <Animated.View entering={FadeInDown.duration(400).springify()}>
+              {imageUri ? (
+                <Image source={{ uri: imageUri as string }} style={styles.imagePreview} />
+              ) : (
+                <View style={styles.imagePlaceholder}>
+                  <FontAwesome name="image" size={48} color={COLORS.borderMedium} />
+                  <Text style={{ ...TYPOGRAPHY.body, color: COLORS.textMuted, marginTop: SPACING.sm }}>No image provided</Text>
+                </View>
+              )}
+            </Animated.View>
+
+            <Animated.View entering={FadeInUp.duration(600).delay(100).springify()}>
+              <Text style={styles.sectionTitle}>Select Symptoms</Text>
+              <Text style={styles.sectionDesc}>Help the AI by selecting visible symptoms.</Text>
+              
+              <View style={styles.symptomsContainer}>
+                {SYMPTOMS_LIST.map(sym => (
+                  <TouchableOpacity 
+                    key={sym.id} 
+                    style={[styles.symptomChip, selectedSymptoms[sym.id] && styles.symptomChipSelected]}
+                    onPress={() => toggleSymptom(sym.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.symptomText, selectedSymptoms[sym.id] && styles.symptomTextSelected]}>
+                      {sym.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Animated.View>
+
+            <Animated.View entering={FadeInUp.duration(600).delay(200).springify()}>
+              <TouchableOpacity 
+                style={[GLOBAL_STYLES.btnPrimary, (!plugin.model && Platform.OS !== 'web') && GLOBAL_STYLES.btnDisabled, { marginBottom: SPACING.xxl }]} 
+                onPress={handleDiagnose}
+                disabled={!plugin.model && Platform.OS !== 'web'}
+                activeOpacity={0.8}
+              >
+                <Text style={GLOBAL_STYLES.btnText}>
+                  {(plugin.model || Platform.OS === 'web') ? 'Run AI Diagnosis' : 'Loading Model...'}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </>
         )}
-      </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6', padding: 20 },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#1F2937', marginBottom: 20, marginTop: 40 },
-  imagePreview: { width: '100%', height: 250, borderRadius: 16, marginBottom: 20 },
-  imagePlaceholder: { width: '100%', height: 250, borderRadius: 16, backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: '#4B5563', marginBottom: 12 },
-  symptomsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 40 },
-  symptomChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB' },
-  symptomChipSelected: { backgroundColor: '#10B981', borderColor: '#10B981' },
-  symptomText: { color: '#374151', fontWeight: '500' },
+  container: { flex: 1, backgroundColor: COLORS.backgroundBase },
+  header: { 
+    backgroundColor: COLORS.backgroundBase, 
+    padding: SPACING.lg, 
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, 
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+    zIndex: 10
+  },
+  headerTitle: { ...TYPOGRAPHY.h3, color: COLORS.textMain },
+  backBtn: { padding: SPACING.xs },
+  scrollContent: { padding: SPACING.lg },
+  imagePreview: { width: '100%', height: 280, borderRadius: SIZES.radiusXl, marginBottom: SPACING.xl, ...SHADOWS.md },
+  imagePlaceholder: { width: '100%', height: 280, borderRadius: SIZES.radiusXl, backgroundColor: COLORS.backgroundSurface, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.xl, borderWidth: 2, borderColor: COLORS.borderMedium, borderStyle: 'dashed' },
+  sectionTitle: { ...TYPOGRAPHY.h3, color: COLORS.textMain, marginBottom: 2 },
+  sectionDesc: { ...TYPOGRAPHY.body, color: COLORS.textMuted, marginBottom: SPACING.md },
+  symptomsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.xxl },
+  symptomChip: { paddingHorizontal: SPACING.lg, paddingVertical: 10, borderRadius: 100, backgroundColor: COLORS.backgroundSurface, borderWidth: 1, borderColor: COLORS.borderMedium, ...SHADOWS.sm },
+  symptomChipSelected: { backgroundColor: COLORS.primaryDark, borderColor: COLORS.primaryDark },
+  symptomText: { ...TYPOGRAPHY.label, color: COLORS.textMain },
   symptomTextSelected: { color: '#fff' },
-  btn: { backgroundColor: '#2563EB', padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 40 },
-  btnDisabled: { backgroundColor: '#9CA3AF' },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  skeletonContainer: { alignItems: 'center', paddingVertical: SPACING.md },
+  skeletonImage: { width: '100%', height: 200, backgroundColor: COLORS.borderMedium, borderRadius: SIZES.radiusLg, marginBottom: SPACING.lg },
+  skeletonText: { height: 24, backgroundColor: COLORS.borderMedium, borderRadius: SIZES.radiusSm, marginBottom: SPACING.sm },
 });

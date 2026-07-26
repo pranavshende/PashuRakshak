@@ -3,11 +3,32 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { getPendingSyncs, markAsSynced } from '../../database/localDb';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
+import Animated, { FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, cancelAnimation } from 'react-native-reanimated';
 
 export default function SyncScreen() {
   const [pendingRecords, setPendingRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  const rotation = useSharedValue(0);
+  
+  const animatedSyncStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }]
+  }));
+
+  const startRotation = () => {
+    rotation.value = withRepeat(
+      withTiming(360, { duration: 1000, easing: Easing.linear }),
+      -1,
+      false
+    );
+  };
+
+  const stopRotation = () => {
+    cancelAnimation(rotation);
+    rotation.value = 0;
+  };
 
   useEffect(() => {
     loadRecords();
@@ -27,9 +48,9 @@ export default function SyncScreen() {
   const handleSync = async () => {
     if (pendingRecords.length === 0) return;
     setLoading(true);
+    startRotation();
     
     try {
-      // Get JWT token
       let token = null;
       if (Platform.OS === 'web') {
         token = localStorage.getItem('userToken');
@@ -38,9 +59,7 @@ export default function SyncScreen() {
         token = await SecureStore.getItemAsync('userToken');
       }
 
-      const backendUrl = Platform.OS === 'web' 
-        ? 'http://127.0.0.1:5000/predict/sync'
-        : 'http://10.0.2.2:5000/predict/sync';
+      const backendUrl = `${process.env.EXPO_PUBLIC_API_URL}/predict/sync`;
 
       const response = await fetch(backendUrl, {
         method: 'POST',
@@ -54,7 +73,6 @@ export default function SyncScreen() {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Mark locally as synced
         for (const id of data.syncedIds) {
           await markAsSynced(id);
         }
@@ -68,49 +86,78 @@ export default function SyncScreen() {
       alert('Failed to connect to the backend server.');
     } finally {
       setLoading(false);
+      stopRotation();
     }
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <View>
-        <Text style={styles.diseaseText}>{item.disease}</Text>
-        <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleString()}</Text>
+  const renderItem = ({ item, index }: { item: any; index: number }) => (
+    <Animated.View entering={FadeInRight.delay(index * 100).springify()} style={GLOBAL_STYLES.card}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+          <View style={styles.iconWrapper}>
+            <FontAwesome name="file-text-o" size={20} color={COLORS.primaryDark} />
+          </View>
+          <View>
+            <Text style={styles.diseaseText}>{item.disease}</Text>
+            <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleString()}</Text>
+          </View>
+        </View>
+        <View style={styles.statusBadge}>
+          <Text style={styles.statusText}>Pending</Text>
+        </View>
       </View>
-      <View style={styles.statusBadge}>
-        <Text style={styles.statusText}>Pending Sync</Text>
-      </View>
-    </View>
+    </Animated.View>
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <FontAwesome name="arrow-left" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Offline Records</Text>
-        <View style={{ flex: 1 }} />
-        {pendingRecords.length > 0 && !loading && (
-          <TouchableOpacity onPress={handleSync} style={styles.syncBtn}>
-            <Text style={styles.syncBtnText}>Sync Now</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <FontAwesome name="arrow-left" size={20} color={COLORS.textMain} />
           </TouchableOpacity>
-        )}
+          <View>
+            <Text style={styles.headerTitle}>Sync Center</Text>
+            <Text style={styles.headerSubtitle}>Offline Data Manager</Text>
+          </View>
+        </View>
       </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 40 }} />
+      <View style={styles.syncStatusContainer}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.statusTitle}>Unsynced Records</Text>
+          <Text style={styles.statusSub}>{pendingRecords.length} items ready to upload</Text>
+        </View>
+        <TouchableOpacity 
+          style={[styles.syncBtn, loading || pendingRecords.length === 0 ? styles.syncBtnDisabled : null]} 
+          onPress={handleSync}
+          disabled={loading || pendingRecords.length === 0}
+          activeOpacity={0.8}
+        >
+          <Animated.View style={loading ? animatedSyncStyle : undefined}>
+            <FontAwesome name="refresh" size={16} color="#fff" />
+          </Animated.View>
+          <Text style={styles.syncBtnText}>{loading ? 'Syncing...' : 'Sync Now'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {loading && pendingRecords.length === 0 ? (
+        <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 40 }} />
       ) : pendingRecords.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <FontAwesome name="cloud-upload" size={64} color="#D1D5DB" />
-          <Text style={styles.emptyText}>All records are synced!</Text>
+          <View style={styles.emptyIconWrapper}>
+            <FontAwesome name="cloud-check" size={48} color={COLORS.success} />
+          </View>
+          <Text style={styles.emptyText}>All Caught Up!</Text>
+          <Text style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted, marginTop: SPACING.xs }}>Your data is securely backed up to the cloud.</Text>
         </View>
       ) : (
         <FlatList
           data={pendingRecords}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
@@ -118,17 +165,34 @@ export default function SyncScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 60, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  backBtn: { marginRight: 16 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1F2937' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { marginTop: 16, fontSize: 18, color: '#6B7280' },
-  card: { backgroundColor: '#fff', marginHorizontal: 20, marginTop: 16, padding: 16, borderRadius: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
-  diseaseText: { fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginBottom: 4 },
-  dateText: { fontSize: 12, color: '#6B7280' },
-  statusBadge: { backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  statusText: { color: '#D97706', fontSize: 12, fontWeight: '600' },
-  syncBtn: { backgroundColor: '#10B981', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  syncBtnText: { color: '#fff', fontWeight: 'bold' },
+  container: { flex: 1, backgroundColor: COLORS.backgroundBase },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    backgroundColor: COLORS.backgroundBase, 
+    padding: SPACING.lg, 
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, 
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+    zIndex: 10
+  },
+  headerTitle: { ...TYPOGRAPHY.h2, color: COLORS.textMain, marginBottom: 2 },
+  headerSubtitle: { ...TYPOGRAPHY.label, color: COLORS.primary },
+  backBtn: { padding: SPACING.xs },
+  syncStatusContainer: { flexDirection: 'row', alignItems: 'center', padding: SPACING.lg, backgroundColor: COLORS.backgroundSurface, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
+  statusTitle: { ...TYPOGRAPHY.h3, color: COLORS.textMain },
+  statusSub: { ...TYPOGRAPHY.label, color: COLORS.textMuted, marginTop: 2 },
+  syncBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: SIZES.radiusXl, gap: SPACING.sm, ...SHADOWS.sm },
+  syncBtnDisabled: { backgroundColor: COLORS.borderMedium, ...SHADOWS.none },
+  syncBtnText: { color: '#fff', fontWeight: '700' },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
+  emptyIconWrapper: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#D1FAE5', justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.lg },
+  emptyText: { ...TYPOGRAPHY.h2, color: COLORS.textMain },
+  iconWrapper: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center' },
+  diseaseText: { ...TYPOGRAPHY.h3, fontSize: 16, color: COLORS.textMain, marginBottom: 2 },
+  dateText: { ...TYPOGRAPHY.label, color: COLORS.textMuted },
+  statusBadge: { backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: SIZES.radiusMd },
+  statusText: { color: '#D97706', fontSize: 12, fontWeight: '700' }
 });

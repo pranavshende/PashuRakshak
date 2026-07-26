@@ -1,58 +1,43 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { COLORS, SPACING, TYPOGRAPHY, GLOBAL_STYLES } from '../../constants/theme';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
 
-  const handleSendOtp = async () => {
-    if (!name || !phone) return Alert.alert('Error', 'Please enter your name and phone number');
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phone,
-        options: {
-          data: {
-            name: name,
-          }
-        }
-      });
-      if (error) throw error;
-      setStep('OTP');
-      Alert.alert('OTP Sent', 'Please check your messages');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
 
-  const handleVerifyOtp = async () => {
-    if (!otp) return Alert.alert('Error', 'Please enter the OTP');
+  const handleRegister = async () => {
+    if (!name || !phone || !password) {
+      return Alert.alert('Error', 'Please fill in all fields');
+    }
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: phone,
-        token: otp,
-        type: 'sms',
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, password }),
       });
-      if (error) throw error;
       
-      if (data.session) {
-        // Log in to our local auth context
-        await login(data.session.access_token, data.user);
-        router.replace('/(farmer)' as any);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create account');
       }
+      
+      Alert.alert('Registration Successful', 'Please log in with your new account.');
+      router.replace('/login');
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.message || 'Invalid OTP');
+      Alert.alert('Registration Failed', error.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -60,58 +45,84 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
+      <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.content}>
+        <View style={styles.header}>
+          <Text style={TYPOGRAPHY.h1}>PashuRakshak</Text>
+          <Text style={styles.subtitle}>Create your farmer account</Text>
+        </View>
 
-      {step === 'PHONE' ? (
-        <>
-          <TextInput
-            style={styles.input}
-            placeholder="Full Name"
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Phone Number (e.g. +91...)"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            autoCapitalize="none"
-          />
-          <TouchableOpacity style={styles.button} onPress={handleSendOtp} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send OTP</Text>}
-          </TouchableOpacity>
-        </>
-      ) : (
-        <>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter OTP"
-            value={otp}
-            onChangeText={setOtp}
-            keyboardType="number-pad"
-          />
-          <TouchableOpacity style={styles.button} onPress={handleVerifyOtp} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Verify & Register</Text>}
-          </TouchableOpacity>
-        </>
-      )}
+        <FloatingLabelInput
+          label="Full Name"
+          value={name}
+          onChangeText={setName}
+        />
 
-      <Link href="/login" asChild>
-        <TouchableOpacity style={styles.linkButton}>
-          <Text style={styles.linkText}>Already have an account? Login</Text>
+        <FloatingLabelInput
+          label="Phone Number"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          autoCapitalize="none"
+        />
+
+        <FloatingLabelInput
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        
+        <View style={{ height: SPACING.md }} />
+
+        <TouchableOpacity 
+          style={GLOBAL_STYLES.btnPrimary} 
+          onPress={handleRegister} 
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={GLOBAL_STYLES.btnText}>Create Account</Text>
+          )}
         </TouchableOpacity>
-      </Link>
+
+        <Link href="/login" asChild>
+          <TouchableOpacity style={styles.linkButton} activeOpacity={0.7}>
+            <Text style={styles.linkText}>
+              Already have an account? <Text style={{ color: COLORS.primary, fontWeight: '600' }}>Sign In</Text>
+            </Text>
+          </TouchableOpacity>
+        </Link>
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
-  title: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', color: '#2b6cb0', marginBottom: 40 },
-  input: { borderWidth: 1, borderColor: '#e2e8f0', padding: 15, borderRadius: 8, marginBottom: 15, fontSize: 16 },
-  button: { backgroundColor: '#2b6cb0', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  linkButton: { marginTop: 20, alignItems: 'center' },
-  linkText: { color: '#2b6cb0', fontSize: 16 },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundBase,
+  },
+  content: {
+    flex: 1,
+    padding: SPACING.xl,
+    justifyContent: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: SPACING.xxl,
+  },
+  subtitle: {
+    ...TYPOGRAPHY.body,
+    marginTop: SPACING.sm,
+  },
+  linkButton: {
+    marginTop: SPACING.xl,
+    alignItems: 'center',
+  },
+  linkText: {
+    ...TYPOGRAPHY.body,
+    fontSize: 14,
+  },
 });

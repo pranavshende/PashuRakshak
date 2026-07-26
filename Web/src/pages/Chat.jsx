@@ -40,41 +40,65 @@ export default function Chat() {
   };
 
   return (
-    <div className="page-container" style={{ padding: '20px', maxWidth: '700px', margin: '0 auto' }}>
-      <button onClick={() => navigate('/')} style={styles.backBtn}>
-        <ArrowLeft size={20} /> Back to Dashboard
-      </button>
+    <div className="container" style={{ padding: '40px 24px', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <button onClick={() => navigate('/')} className="btn btn-ghost" style={{ padding: '0 8px' }}>
+          <ArrowLeft size={20} /> Back to Dashboard
+        </button>
+      </div>
 
-      <h1 style={{ color: '#111827', marginTop: '15px' }}>🤖 AI Veterinary Assistant</h1>
-      <p style={{ color: '#6B7280', marginBottom: '20px' }}>Powered by Gemini AI for instant triage and cattle health guidance.</p>
+      <h1 style={{ marginBottom: '8px' }}>🤖 AI Veterinary Assistant</h1>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>Powered by Gemini AI for instant triage and cattle health guidance.</p>
 
-      <div style={styles.chatBox}>
-        <div style={styles.messageList}>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '600px', overflow: 'hidden', padding: 0 }}>
+        <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', background: 'var(--bg-base)' }}>
           {messages.map((m, idx) => (
-            <div key={idx} style={{ ...styles.bubbleRow, justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start' }}>
-              {m.sender === 'bot' && <Bot size={24} color="#10B981" style={{ marginTop: '4px' }} />}
+            <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start' }}>
+              {m.sender === 'bot' && (
+                <div style={{ background: 'var(--primary-light)', padding: '8px', borderRadius: '50%' }}>
+                  <Bot size={20} color="var(--primary-dark)" />
+                </div>
+              )}
               <div style={{
-                ...styles.bubble,
-                background: m.sender === 'user' ? '#10B981' : '#F3F4F6',
-                color: m.sender === 'user' ? '#fff' : '#1F2937'
+                padding: '16px 20px', 
+                borderRadius: '16px', 
+                maxWidth: '75%', 
+                lineHeight: '1.5',
+                fontSize: '15px',
+                background: m.sender === 'user' ? 'var(--primary)' : '#fff',
+                color: m.sender === 'user' ? '#fff' : 'var(--text-main)',
+                border: m.sender === 'bot' ? '1px solid var(--border-light)' : 'none',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
               }}>
                 {m.text}
               </div>
-              {m.sender === 'user' && <User size={24} color="#3B82F6" style={{ marginTop: '4px' }} />}
+              {m.sender === 'user' && (
+                <div style={{ background: 'var(--secondary-light)', padding: '8px', borderRadius: '50%' }}>
+                  <User size={20} color="var(--secondary-dark)" />
+                </div>
+              )}
             </div>
           ))}
-          {loading && <p style={{ fontStyle: 'italic', color: '#9CA3AF' }}>AI is thinking...</p>}
+          {loading && (
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <div style={{ background: 'var(--primary-light)', padding: '8px', borderRadius: '50%' }}>
+                <Bot size={20} color="var(--primary-dark)" />
+              </div>
+              <p style={{ fontStyle: 'italic', color: 'var(--text-muted)', margin: 0, fontSize: '14px' }}>AI is thinking...</p>
+            </div>
+          )}
         </div>
 
-        <form onSubmit={handleSend} style={styles.inputRow}>
+        <form onSubmit={handleSend} style={{ display: 'flex', gap: '12px', padding: '20px', borderTop: '1px solid var(--border-light)', background: '#fff' }}>
           <input 
             type="text" 
             placeholder="Ask a question (e.g., My cow has fever and blisters)..." 
             value={input}
             onChange={e => setInput(e.target.value)}
-            style={styles.input}
+            className="input-field"
+            style={{ flex: 1, margin: 0 }}
           />
-          <button type="submit" style={styles.sendBtn}>
+          <button type="submit" className="btn btn-primary" style={{ padding: '0 24px' }}>
             <Send size={18} />
           </button>
         </form>
@@ -82,14 +106,3 @@ export default function Chat() {
     </div>
   );
 }
-
-const styles = {
-  backBtn: { display: 'flex', alignItems: 'center', gap: '8px', border: 'none', background: 'none', cursor: 'pointer', color: '#4B5563', fontWeight: 'bold' },
-  chatBox: { background: '#fff', border: '1px solid #E5E7EB', borderRadius: '12px', display: 'flex', flexDirection: 'column', height: '500px', overflow: 'hidden' },
-  messageList: { flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' },
-  bubbleRow: { display: 'flex', gap: '10px', alignItems: 'flex-start' },
-  bubble: { padding: '12px 16px', borderRadius: '16px', maxWidth: '80%', lineHeight: '1.4' },
-  inputRow: { display: 'flex', gap: '10px', padding: '15px', borderTop: '1px solid #E5E7EB', background: '#F9FAFB' },
-  input: { flex: 1, padding: '10px 15px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px', outline: 'none' },
-  sendBtn: { background: '#10B981', color: '#fff', border: 'none', padding: '0 20px', borderRadius: '8px', cursor: 'pointer' }
-};

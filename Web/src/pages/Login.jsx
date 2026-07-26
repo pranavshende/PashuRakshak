@@ -32,38 +32,50 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1 className="brand-title">PashuRakshak</h1>
-        <p className="auth-subtitle">Welcome Back!</p>
+    <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-gradient)' }}>
+      <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h1 style={{ color: 'var(--primary-dark)', marginBottom: '8px' }}>PashuRakshak</h1>
+          <p>Sign in to your account</p>
+        </div>
 
-        <form onSubmit={handleLogin} className="auth-form">
-          <input
-            type="tel"
-            className="input-field"
-            placeholder="Phone Number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            className="input-field"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+        <form onSubmit={handleLogin}>
+          <div className="input-group">
+            <label className="input-label">Phone Number</label>
+            <input
+              type="tel"
+              className="input-field"
+              placeholder="+91 00000 00000"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="input-group" style={{ marginBottom: '24px' }}>
+            <label className="input-label">Password</label>
+            <input
+              type="password"
+              className="input-field"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-          <button type="submit" className="primary-button">
-            Login
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+            Sign In
           </button>
         </form>
 
-        <div className="auth-footer">
-          <Link to="/register" className="link-text">
-            Don't have an account? <span>Register</span>
-          </Link>
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.9rem' }}>
+            Don't have an account?{' '}
+            <Link to="/register" style={{ color: 'var(--primary)', fontWeight: '600', textDecoration: 'none' }}>
+              Create Account
+            </Link>
+          </p>
         </div>
       </div>
     </div>

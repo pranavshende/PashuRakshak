@@ -53,41 +53,50 @@ export default function Herd() {
   };
 
   return (
-    <div className="page-container" style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={() => navigate('/')} style={styles.backBtn}>
+    <div className="container" style={{ padding: '40px 24px', maxWidth: '1000px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <button onClick={() => navigate('/')} className="btn btn-ghost" style={{ padding: '0 8px' }}>
           <ArrowLeft size={20} /> Back to Dashboard
         </button>
-        <button onClick={() => setShowModal(true)} style={styles.addBtn}>
-          <Plus size={18} /> Register New Animal
+        <button onClick={() => setShowModal(true)} className="btn btn-primary">
+          <Plus size={18} /> Register Animal
         </button>
       </div>
 
-      <h1 style={{ color: '#111827', marginTop: '15px' }}>🐄 My Herd (Digital Twins)</h1>
-      <p style={{ color: '#6B7280', marginBottom: '30px' }}>Manage animal profiles, medical history, and health records.</p>
+      <h1 style={{ marginBottom: '8px' }}>My Herd (Digital Twins)</h1>
+      <p style={{ marginBottom: '32px' }}>Manage animal profiles, medical history, and health records.</p>
 
       {loading ? (
-        <p>Loading herd data...</p>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-muted)' }}>Loading herd data...</p>
+        </div>
       ) : animals.length === 0 ? (
-        <div style={styles.emptyState}>
-          <p>No animals registered in your herd yet.</p>
-          <button onClick={() => setShowModal(true)} style={styles.addBtn}>Register Animal</button>
+        <div className="card" style={{ padding: '64px 24px', textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '18px' }}>No animals registered in your herd yet.</p>
+          <button onClick={() => setShowModal(true)} className="btn btn-primary">
+            <Plus size={18} /> Register First Animal
+          </button>
         </div>
       ) : (
-        <div style={styles.grid}>
+        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
           {animals.map(animal => (
             <div 
               key={animal.id} 
               onClick={() => navigate(`/animal/${animal.id}`)}
-              style={styles.card}
+              className="card"
+              style={{ cursor: 'pointer' }}
             >
-              <div style={styles.cardHeader}>
-                <Tag size={18} color="#10B981" />
-                <span style={{ fontWeight: 'bold', color: '#111827' }}>{animal.tagId}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ background: 'var(--primary-light)', padding: '6px', borderRadius: '4px' }}>
+                  <Tag size={18} color="var(--primary-dark)" />
+                </div>
+                <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>{animal.tagId}</span>
               </div>
-              <h2 style={{ margin: '10px 0 5px 0', fontSize: '20px', color: '#10B981' }}>{animal.name || 'Unnamed'}</h2>
-              <p style={{ color: '#4B5563', margin: 0 }}>Breed: {animal.breed || 'N/A'}</p>
-              {animal.weight && <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '5px' }}>Weight: {animal.weight} kg</p>}
+              <h2 style={{ fontSize: '20px', color: 'var(--primary-dark)', marginBottom: '8px' }}>
+                {animal.name || 'Unnamed'}
+              </h2>
+              <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '14px' }}>Breed: {animal.breed || 'N/A'}</p>
+              {animal.weight && <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>Weight: {animal.weight} kg</p>}
             </div>
           ))}
         </div>
@@ -95,42 +104,54 @@ export default function Herd() {
 
       {/* Modal */}
       {showModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h2 style={{ marginTop: 0 }}>Register Cattle</h2>
-            <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <input 
-                type="text" 
-                placeholder="Tag ID (Required)" 
-                required
-                value={form.tagId}
-                onChange={e => setForm({ ...form, tagId: e.target.value })}
-                style={styles.input}
-              />
-              <input 
-                type="text" 
-                placeholder="Animal Name (e.g. Gauri)" 
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
-                style={styles.input}
-              />
-              <input 
-                type="text" 
-                placeholder="Breed (e.g. Gir, HF)" 
-                value={form.breed}
-                onChange={e => setForm({ ...form, breed: e.target.value })}
-                style={styles.input}
-              />
-              <input 
-                type="number" 
-                placeholder="Weight in kg" 
-                value={form.weight}
-                onChange={e => setForm({ ...form, weight: e.target.value })}
-                style={styles.input}
-              />
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
-                <button type="button" onClick={() => setShowModal(false)} style={styles.cancelBtn}>Cancel</button>
-                <button type="submit" style={styles.saveBtn}>Save</button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(17, 24, 39, 0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '32px' }}>
+            <h2 style={{ marginBottom: '24px' }}>Register Cattle</h2>
+            <form onSubmit={handleAdd}>
+              <div className="input-group">
+                <label className="input-label">Tag ID (Required)</label>
+                <input 
+                  type="text" 
+                  className="input-field"
+                  placeholder="e.g. TAG-1029" 
+                  required
+                  value={form.tagId}
+                  onChange={e => setForm({ ...form, tagId: e.target.value })}
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Animal Name</label>
+                <input 
+                  type="text" 
+                  className="input-field"
+                  placeholder="e.g. Gauri" 
+                  value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Breed</label>
+                <input 
+                  type="text" 
+                  className="input-field"
+                  placeholder="e.g. Gir, HF" 
+                  value={form.breed}
+                  onChange={e => setForm({ ...form, breed: e.target.value })}
+                />
+              </div>
+              <div className="input-group" style={{ marginBottom: '32px' }}>
+                <label className="input-label">Weight (kg)</label>
+                <input 
+                  type="number" 
+                  className="input-field"
+                  placeholder="e.g. 450" 
+                  value={form.weight}
+                  onChange={e => setForm({ ...form, weight: e.target.value })}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setShowModal(false)} className="btn btn-outline">Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Animal</button>
               </div>
             </form>
           </div>
@@ -139,17 +160,3 @@ export default function Herd() {
     </div>
   );
 }
-
-const styles = {
-  backBtn: { display: 'flex', alignItems: 'center', gap: '8px', border: 'none', background: 'none', cursor: 'pointer', color: '#4B5563', fontWeight: 'bold' },
-  addBtn: { display: 'flex', alignItems: 'center', gap: '6px', background: '#10B981', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' },
-  card: { background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB', cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
-  cardHeader: { display: 'flex', alignItems: 'center', gap: '8px' },
-  emptyState: { background: '#fff', padding: '40px', borderRadius: '12px', textAlign: 'center', color: '#6B7280' },
-  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
-  modal: { background: '#fff', padding: '25px', borderRadius: '12px', width: '100%', maxWidth: '400px' },
-  input: { padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '15px' },
-  cancelBtn: { padding: '8px 15px', border: 'none', background: '#F3F4F6', borderRadius: '6px', cursor: 'pointer' },
-  saveBtn: { padding: '8px 15px', border: 'none', background: '#10B981', color: '#fff', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }
-};

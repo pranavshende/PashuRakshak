@@ -43,37 +43,48 @@ export default function Medicine() {
   const diseaseInfo = MEDICINE_DATA[selectedDisease];
 
   return (
-    <div className="page-container" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-      <button onClick={() => navigate('/')} className="back-btn" style={styles.backBtn}>
-        <ArrowLeft size={20} /> Back to Dashboard
-      </button>
+    <div className="container" style={{ padding: '40px 24px', maxWidth: '1000px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <button onClick={() => navigate('/')} className="btn btn-ghost" style={{ padding: '0 8px' }}>
+          <ArrowLeft size={20} /> Back to Dashboard
+        </button>
+      </div>
 
-      <h1 style={{ color: '#111827', marginTop: '15px' }}>💊 Veterinary Medicine Reference</h1>
-      <p style={{ color: '#6B7280', marginBottom: '20px' }}>Recommended first-aid treatments and quarantine protocols.</p>
+      <h1 style={{ marginBottom: '8px' }}>💊 Veterinary Medicine Reference</h1>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>Recommended first-aid treatments and quarantine protocols.</p>
 
       {/* Search Input */}
-      <div style={styles.searchBox}>
-        <Search size={20} color="#9CA3AF" />
+      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 24px', marginBottom: '32px' }}>
+        <Search size={24} color="var(--text-muted)" />
         <input 
           type="text" 
           placeholder="Search disease (e.g., FMD, Lumpy Skin)..." 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={styles.searchInput}
+          style={{ border: 'none', outline: 'none', width: '100%', fontSize: '16px', background: 'transparent', color: 'var(--text-main)' }}
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px', marginTop: '20px' }}>
+      <div className="grid" style={{ gridTemplateColumns: '1fr 2fr' }}>
         {/* List of Diseases */}
-        <div style={styles.diseaseList}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredDiseases.map(disease => (
             <button
               key={disease}
               onClick={() => setSelectedDisease(disease)}
               style={{
-                ...styles.diseaseBtn,
-                backgroundColor: selectedDisease === disease ? '#10B981' : '#F3F4F6',
-                color: selectedDisease === disease ? '#fff' : '#374151'
+                padding: '16px 20px', 
+                borderRadius: 'var(--radius-md)', 
+                border: 'none', 
+                cursor: 'pointer', 
+                textAlign: 'left', 
+                fontWeight: '600',
+                fontSize: '15px',
+                transition: 'all 0.2s',
+                backgroundColor: selectedDisease === disease ? 'var(--primary)' : 'var(--bg-base)',
+                color: selectedDisease === disease ? '#fff' : 'var(--text-main)',
+                boxShadow: selectedDisease === disease ? 'var(--shadow-md)' : 'none',
+                border: selectedDisease !== disease ? '1px solid var(--border-light)' : '1px solid transparent'
               }}
             >
               {disease}
@@ -83,25 +94,25 @@ export default function Medicine() {
 
         {/* Details View */}
         {diseaseInfo && (
-          <div style={styles.detailsCard}>
-            <h2 style={{ color: '#111827', marginBottom: '10px' }}>{selectedDisease}</h2>
-            <p style={{ color: '#4B5563', lineHeight: '1.5', marginBottom: '20px' }}>{diseaseInfo.description}</p>
+          <div className="card" style={{ padding: '32px' }}>
+            <h2 style={{ color: 'var(--primary-dark)', marginBottom: '16px' }}>{selectedDisease}</h2>
+            <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '32px', fontSize: '15px' }}>{diseaseInfo.description}</p>
 
-            <div style={styles.quarantineBox}>
-              <ShieldAlert size={24} color="#EF4444" />
+            <div style={{ display: 'flex', gap: '16px', background: '#FEF2F2', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid #FCA5A5', marginBottom: '32px' }}>
+              <ShieldAlert size={28} color="var(--error)" />
               <div>
-                <strong style={{ color: '#991B1B' }}>Quarantine Protocol:</strong>
-                <p style={{ color: '#7F1D1D', margin: 0 }}>{diseaseInfo.quarantine}</p>
+                <strong style={{ color: '#991B1B', display: 'block', marginBottom: '4px', fontSize: '16px' }}>Quarantine Protocol:</strong>
+                <p style={{ color: '#7F1D1D', margin: 0, fontSize: '15px', lineHeight: '1.5' }}>{diseaseInfo.quarantine}</p>
               </div>
             </div>
 
-            <h3 style={{ marginTop: '20px', color: '#1F2937' }}>Treatment Guidelines</h3>
-            <div style={{ marginTop: '10px' }}>
+            <h3 style={{ marginBottom: '20px', color: 'var(--text-main)' }}>Treatment Guidelines</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {diseaseInfo.treatments.map((t, idx) => (
-                <div key={idx} style={styles.treatmentItem}>
-                  <strong style={{ color: '#10B981' }}>{t.name}</strong>
-                  <p style={{ margin: '4px 0', fontSize: '14px', color: '#374151' }}>Dosage: {t.dosage}</p>
-                  <small style={{ color: '#6B7280' }}>Notes: {t.notes}</small>
+                <div key={idx} style={{ background: 'var(--bg-base)', padding: '20px', borderRadius: 'var(--radius-md)', borderLeft: '4px solid var(--primary)' }}>
+                  <strong style={{ color: 'var(--primary-dark)', fontSize: '16px', display: 'block', marginBottom: '8px' }}>{t.name}</strong>
+                  <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: 'var(--text-main)' }}><span style={{ color: 'var(--text-muted)' }}>Dosage:</span> {t.dosage}</p>
+                  <small style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Note: {t.notes}</small>
                 </div>
               ))}
             </div>
@@ -111,14 +122,3 @@ export default function Medicine() {
     </div>
   );
 }
-
-const styles = {
-  backBtn: { display: 'flex', alignItems: 'center', gap: '8px', border: 'none', background: 'none', cursor: 'pointer', color: '#4B5563', fontWeight: 'bold' },
-  searchBox: { display: 'flex', alignItems: 'center', gap: '10px', background: '#fff', border: '1px solid #D1D5DB', borderRadius: '10px', padding: '10px 15px' },
-  searchInput: { border: 'none', outline: 'none', width: '100%', fontSize: '16px' },
-  diseaseList: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  diseaseBtn: { padding: '12px 15px', borderRadius: '8px', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 'bold' },
-  detailsCard: { background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB' },
-  quarantineBox: { display: 'flex', gap: '12px', background: '#FEF2F2', padding: '12px', borderRadius: '8px', border: '1px solid #FCA5A5' },
-  treatmentItem: { background: '#F9FAFB', padding: '12px', borderRadius: '8px', marginBottom: '10px', borderLeft: '4px solid #10B981' }
-};

@@ -30,10 +30,20 @@ async def predict_cattle_disease(file: UploadFile = File(...)):
         image = image.resize((224, 224))
         image_array = np.array(image)
 
-        # 3. Run Inference
+        # 3. Check for solid color / black photos (low variance)
+        variance = np.var(image_array)
+        if variance < 100:  # Threshold for "too solid/black/white"
+            return {
+                "label": "Unknown/Healthy",
+                "confidence": 0.0,
+                "all_scores": {"Healthy": 1.0, "FMD": 0.0, "Lumpy Skin Disease": 0.0, "Mastitis": 0.0},
+                "error": "Image is too dark or solid color. Please upload a clear photo."
+            }
+
+        # 4. Run Inference
         result = model.predict(image_array)
         
-        # 4. Return JSON
+        # 5. Return JSON
         return result
         
     except Exception as e:

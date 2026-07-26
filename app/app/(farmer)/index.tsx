@@ -1,94 +1,168 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, View } from '@/components/Themed';
+import { StyleSheet, TouchableOpacity, ScrollView, View, Text, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
+import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 
 export default function DashboardScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  const mockChartData = [
+    { day: 'Mon', value: 30 },
+    { day: 'Tue', value: 45 },
+    { day: 'Wed', value: 20 },
+    { day: 'Thu', value: 65 },
+    { day: 'Fri', value: 50 },
+    { day: 'Sat', value: 85 },
+    { day: 'Sun', value: 40 },
+  ];
+
   return (
     <View style={styles.container}>
       {/* Header Profile Section */}
       <View style={styles.header}>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0] || 'Farmer'} 👋</Text>
-          <Text style={styles.subtitle}>Let's check your cattle's health today.</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'F'}</Text>
+          </View>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0] || 'Farmer'}</Text>
+            <Text style={styles.subtitle}>Welcome back to PashuRakshak</Text>
+          </View>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-          <FontAwesome name="sign-out" size={24} color="#EF4444" />
+          <FontAwesome name="sign-out" size={22} color={COLORS.textMuted} />
         </TouchableOpacity>
       </View>
 
-      {/* Main Action Area */}
-      <View style={styles.mainActionContainer}>
-        <TouchableOpacity 
-          style={styles.scanButton}
-          activeOpacity={0.8}
-          onPress={() => router.push('/capture')}
-        >
-          <View style={styles.scanIconContainer}>
-            <FontAwesome name="camera" size={50} color="#fff" />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Main Scan Action Area */}
+        <Animated.View entering={FadeInUp.duration(600).springify()}>
+          <TouchableOpacity 
+            style={styles.scanButton}
+            activeOpacity={0.9}
+            onPress={() => router.push('/capture')}
+          >
+            <View style={styles.scanContent}>
+              <View>
+                <Text style={styles.scanButtonTitle}>Scan Cattle</Text>
+                <Text style={styles.scanButtonSubtitle}>Instant AI health analysis</Text>
+              </View>
+              <View style={styles.scanIconContainer}>
+                <FontAwesome name="camera" size={24} color={COLORS.primary} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Quick Action Cards (Horizontal Scroll) */}
+        <Animated.View entering={FadeInUp.duration(600).delay(100).springify()}>
+          <Text style={styles.sectionTitle}>Farm Services</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+            <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/(farmer)/animals' as any)}>
+              <View style={[styles.actionIconWrapper, { backgroundColor: '#EDE9FE' }]}>
+                <FontAwesome name="paw" size={24} color="#8B5CF6" />
+              </View>
+              <Text style={styles.actionCardText}>My Herd</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/(farmer)/medicine' as any)}>
+              <View style={[styles.actionIconWrapper, { backgroundColor: COLORS.secondaryLight }]}>
+                <FontAwesome name="medkit" size={24} color={COLORS.secondary} />
+              </View>
+              <Text style={styles.actionCardText}>Medicines</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/(farmer)/chat' as any)}>
+              <View style={[styles.actionIconWrapper, { backgroundColor: COLORS.primaryLight }]}>
+                <FontAwesome name="comments" size={24} color={COLORS.primary} />
+              </View>
+              <Text style={styles.actionCardText}>AI Vet</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/(farmer)/heatmap' as any)}>
+              <View style={[styles.actionIconWrapper, { backgroundColor: '#FEF3C7' }]}>
+                <FontAwesome name="map" size={24} color={COLORS.warning} />
+              </View>
+              <Text style={styles.actionCardText}>Map</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/(farmer)/settings' as any)}>
+              <View style={[styles.actionIconWrapper, { backgroundColor: '#F3F4F6' }]}>
+                <FontAwesome name="cog" size={24} color="#4B5563" />
+              </View>
+              <Text style={styles.actionCardText}>Settings</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </Animated.View>
+
+        {/* Health Statistics Bar Chart */}
+        <Animated.View entering={FadeInUp.duration(600).delay(200).springify()}>
+          <Text style={[styles.sectionTitle, { marginTop: SPACING.md }]}>Weekly Scans</Text>
+          <View style={GLOBAL_STYLES.card}>
+            <View style={styles.chartContainer}>
+              {mockChartData.map((data, index) => (
+                <View key={index} style={styles.chartBarWrapper}>
+                  <View style={styles.chartBarBackground}>
+                    <View style={[styles.chartBarFill, { height: `${data.value}%`, backgroundColor: data.value > 60 ? COLORS.success : (data.value > 30 ? COLORS.warning : COLORS.error) }]} />
+                  </View>
+                  <Text style={styles.chartDayText}>{data.day}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-          <Text style={styles.scanButtonTitle}>Scan Cattle</Text>
-          <Text style={styles.scanButtonSubtitle}>Take a photo for instant AI analysis</Text>
-        </TouchableOpacity>
-      </View>
+        </Animated.View>
 
-      {/* Stats/Quick Info */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <FontAwesome name="heartbeat" size={24} color="#10B981" />
-          <Text style={styles.statValue}>12</Text>
-          <Text style={styles.statLabel}>Healthy Scans</Text>
-        </View>
-        <View style={styles.statCard}>
-          <FontAwesome name="warning" size={24} color="#F59E0B" />
-          <Text style={styles.statValue}>2</Text>
-          <Text style={styles.statLabel}>Issues Found</Text>
-        </View>
-      </View>
+        {/* Activity Timeline */}
+        <Animated.View entering={FadeInUp.duration(600).delay(300).springify()}>
+          <Text style={[styles.sectionTitle, { marginTop: SPACING.xl }]}>Recent Activity</Text>
+          <View style={GLOBAL_STYLES.card}>
+            {/* Timeline Item 1 */}
+            <View style={styles.timelineItem}>
+              <View style={styles.timelineLeft}>
+                <View style={[styles.timelineDot, { backgroundColor: COLORS.success }]} />
+                <View style={styles.timelineLine} />
+              </View>
+              <View style={styles.timelineContent}>
+                <Text style={styles.timelineTitle}>Healthy Scan</Text>
+                <Text style={styles.timelineDesc}>Cow #104 scanned clear.</Text>
+                <Text style={styles.timelineTime}>2 hours ago</Text>
+              </View>
+            </View>
 
-      {/* New Features Row 1 */}
-      <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/medicine' as any)}>
-          <FontAwesome name="medkit" size={24} color="#2563EB" />
-          <Text style={styles.actionBtnText}>Medicines</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/animals' as any)}>
-          <FontAwesome name="paw" size={24} color="#8B5CF6" />
-          <Text style={styles.actionBtnText}>My Herd</Text>
-        </TouchableOpacity>
-      </View>
+            {/* Timeline Item 2 */}
+            <View style={styles.timelineItem}>
+              <View style={styles.timelineLeft}>
+                <View style={[styles.timelineDot, { backgroundColor: COLORS.warning }]} />
+                <View style={styles.timelineLine} />
+              </View>
+              <View style={styles.timelineContent}>
+                <Text style={styles.timelineTitle}>Medium Risk Detected</Text>
+                <Text style={styles.timelineDesc}>Possible Mastitis identified.</Text>
+                <Text style={styles.timelineTime}>Yesterday</Text>
+              </View>
+            </View>
 
-      {/* New Features Row 2 */}
-      <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/chat' as any)}>
-          <FontAwesome name="comments" size={24} color="#10B981" />
-          <Text style={styles.actionBtnText}>AI Vet Chat</Text>
-        </TouchableOpacity>
+            {/* Timeline Item 3 */}
+            <View style={styles.timelineItem}>
+              <View style={styles.timelineLeft}>
+                <View style={[styles.timelineDot, { backgroundColor: COLORS.secondary }]} />
+              </View>
+              <View style={styles.timelineContent}>
+                <Text style={styles.timelineTitle}>AI Chat Consultation</Text>
+                <Text style={styles.timelineDesc}>Asked about feeding schedule.</Text>
+                <Text style={styles.timelineTime}>2 days ago</Text>
+              </View>
+            </View>
+          </View>
+        </Animated.View>
 
-        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/heatmap' as any)}>
-          <FontAwesome name="map" size={24} color="#F59E0B" />
-          <Text style={styles.actionBtnText}>Disease Map</Text>
-        </TouchableOpacity>
-      </View>
-      
-      {/* Settings Row */}
-      <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/score' as any)}>
-          <FontAwesome name="line-chart" size={24} color="#3B82F6" />
-          <Text style={styles.actionBtnText}>Farm Score</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/settings' as any)}>
-          <FontAwesome name="cog" size={24} color="#4B5563" />
-          <Text style={styles.actionBtnText}>Settings</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Extra spacing for floating tab bar */}
+        <View style={{ height: 100 }} />
+      </ScrollView>
     </View>
   );
 }
@@ -96,131 +170,176 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.backgroundBase,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
+    padding: SPACING.lg,
     paddingTop: 60,
-    backgroundColor: '#fff',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 5,
+    backgroundColor: COLORS.backgroundBase, // Blend with background
+  },
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  avatarText: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.primaryDark,
   },
   headerTextContainer: {
-    backgroundColor: 'transparent',
+    justifyContent: 'center',
   },
   greeting: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0F766E',
+    ...TYPOGRAPHY.h3,
+    fontSize: 20,
+    color: COLORS.textMain,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginTop: 4,
+    ...TYPOGRAPHY.body,
+    fontSize: 14,
   },
   logoutBtn: {
-    padding: 10,
-    backgroundColor: '#FEE2E2',
-    borderRadius: 12,
+    padding: SPACING.sm,
+    backgroundColor: COLORS.borderLight,
+    borderRadius: SIZES.radiusXl,
   },
-  mainActionContainer: {
-    padding: 24,
-    marginTop: 20,
-    backgroundColor: 'transparent',
+  scrollContent: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xxl,
   },
   scanButton: {
-    backgroundColor: '#10B981',
-    borderRadius: 24,
-    padding: 30,
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.radiusXl,
+    padding: SPACING.xl,
+    marginBottom: SPACING.xl,
+    ...SHADOWS.hover,
+  },
+  scanContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
   },
   scanIconContainer: {
-    width: 100,
-    height: 100,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 50,
+    width: 56,
+    height: 56,
+    backgroundColor: '#fff',
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
   },
   scanButtonTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...TYPOGRAPHY.h2,
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   scanButtonSubtitle: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     color: 'rgba(255,255,255,0.9)',
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.h3,
+    marginBottom: SPACING.md,
+  },
+  horizontalScroll: {
+    gap: SPACING.md,
+    paddingBottom: SPACING.sm,
+  },
+  quickActionCard: {
+    backgroundColor: COLORS.backgroundSurface,
+    width: 100,
+    padding: SPACING.md,
+    borderRadius: SIZES.radiusLg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    ...SHADOWS.sm,
+  },
+  actionIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  actionCardText: {
+    ...TYPOGRAPHY.label,
+    fontSize: 13,
     textAlign: 'center',
   },
-  statsContainer: {
+  chartContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 24,
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
+    alignItems: 'flex-end',
+    height: 150,
+    paddingTop: SPACING.md,
   },
-  statCard: {
-    backgroundColor: '#fff',
-    width: '47%',
-    padding: 20,
-    borderRadius: 20,
+  chartBarWrapper: {
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    flex: 1,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginTop: 10,
+  chartBarBackground: {
+    width: 12,
+    height: 100,
+    backgroundColor: COLORS.borderLight,
+    borderRadius: 6,
+    justifyContent: 'flex-end',
+    marginBottom: SPACING.sm,
   },
-  statLabel: {
+  chartBarFill: {
+    width: '100%',
+    borderRadius: 6,
+  },
+  chartDayText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    fontWeight: '500',
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: 0,
+  },
+  timelineLeft: {
+    alignItems: 'center',
+    width: 24,
+    marginRight: SPACING.md,
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: COLORS.borderLight,
+    marginTop: 4,
+    marginBottom: -4, // Connect to next
+  },
+  timelineContent: {
+    flex: 1,
+    paddingBottom: SPACING.lg,
+  },
+  timelineTitle: {
+    ...TYPOGRAPHY.label,
+    fontSize: 16,
+  },
+  timelineDesc: {
+    ...TYPOGRAPHY.body,
     fontSize: 14,
-    color: '#6B7280',
+    marginTop: 2,
+  },
+  timelineTime: {
+    fontSize: 12,
+    color: COLORS.textMuted,
     marginTop: 4,
   },
-  actionRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 24,
-    marginTop: 20,
-    justifyContent: 'space-between',
-    backgroundColor: 'transparent',
-  },
-  actionBtn: {
-    backgroundColor: '#fff',
-    width: '47%',
-    padding: 16,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  actionBtnText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#374151'
-  }
 });

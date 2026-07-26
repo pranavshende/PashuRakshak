@@ -23,9 +23,7 @@ export default function AdminDashboard() {
         token = await SecureStore.getItemAsync('userToken');
       }
 
-      const backendUrl = Platform.OS === 'web' 
-        ? 'http://127.0.0.1:5000/admin/stats'
-        : 'http://10.0.2.2:5000/admin/stats';
+      const backendUrl = `${process.env.EXPO_PUBLIC_API_URL}/admin/stats`;
 
       const response = await fetch(backendUrl, {
         headers: {

@@ -21,7 +21,7 @@ export default function ManageVetsScreen() {
   }, []);
 
   const getBackendUrl = (path: string) => {
-    return Platform.OS === 'web' ? `http://127.0.0.1:5000${path}` : `http://10.0.2.2:5000${path}`;
+    return `${process.env.EXPO_PUBLIC_API_URL}${path}`;
   };
 
   const getToken = async () => {

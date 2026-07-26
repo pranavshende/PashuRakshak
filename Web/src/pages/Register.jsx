@@ -33,46 +33,62 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1 className="brand-title">PashuRakshak</h1>
-        <p className="auth-subtitle">Create an Account</p>
+    <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-gradient)' }}>
+      <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h1 style={{ color: 'var(--primary-dark)', marginBottom: '8px' }}>PashuRakshak</h1>
+          <p>Create your farmer account</p>
+        </div>
 
-        <form onSubmit={handleRegister} className="auth-form">
-          <input
-            type="text"
-            className="input-field"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <input
-            type="tel"
-            className="input-field"
-            placeholder="Phone Number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            className="input-field"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+        <form onSubmit={handleRegister}>
+          <div className="input-group">
+            <label className="input-label">Full Name</label>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="e.g. Ramesh Kumar"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="input-group">
+            <label className="input-label">Phone Number</label>
+            <input
+              type="tel"
+              className="input-field"
+              placeholder="+91 00000 00000"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+            />
+          </div>
 
-          <button type="submit" className="primary-button">
-            Register
+          <div className="input-group" style={{ marginBottom: '24px' }}>
+            <label className="input-label">Password</label>
+            <input
+              type="password"
+              className="input-field"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+            Create Account
           </button>
         </form>
 
-        <div className="auth-footer">
-          <Link to="/login" className="link-text">
-            Already have an account? <span>Login</span>
-          </Link>
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.9rem' }}>
+            Already have an account?{' '}
+            <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '600', textDecoration: 'none' }}>
+              Sign In
+            </Link>
+          </p>
         </div>
       </div>
     </div>
