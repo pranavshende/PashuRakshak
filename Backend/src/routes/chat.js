@@ -39,7 +39,7 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-3.5-flash',
       contents: SYSTEM_PROMPT + langPrompt + "\n\nUser: " + message,
       config: {
         temperature: 0.2,
@@ -47,7 +47,8 @@ router.post('/', requireAuth, async (req, res) => {
     });
 
     if (response.text) {
-      res.json({ response: response.text });
+      const cleanResponse = response.text.replace(/\\n/g, '\n');
+      res.json({ response: cleanResponse });
     } else {
       res.status(500).json({ error: 'Empty response from AI.' });
     }
@@ -79,7 +80,7 @@ router.post('/audio', requireAuth, upload.single('file'), async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-3.5-flash',
       contents: [
         {
           inlineData: {
@@ -99,16 +100,22 @@ router.post('/audio', requireAuth, upload.single('file'), async (req, res) => {
 
     if (response.text) {
       try {
-        const result = JSON.parse(response.text);
+        let cleaned = response.text.trim();
+        if (cleaned.startsWith('```')) {
+          cleaned = cleaned.replace(/^```(?:json)?/, '').replace(/```$/, '').trim();
+        }
+        const result = JSON.parse(cleaned);
+        const cleanResponse = (result.response || "").replace(/\\n/g, '\n');
         res.json({ 
           transcript: result.transcript || "Spoken Audio", 
-          response: result.response || "I heard your audio but could not formulate a response."
+          response: cleanResponse || "I heard your audio but could not formulate a response."
         });
       } catch (parseError) {
-        console.error('JSON Parse Error of Gemini Output:', response.text);
+        console.error('JSON Parse Error of Gemini Output:', response.text, parseError);
+        const cleanResponse = response.text.replace(/\\n/g, '\n');
         res.json({ 
           transcript: "Spoken Audio", 
-          response: response.text 
+          response: cleanResponse 
         });
       }
     } else {

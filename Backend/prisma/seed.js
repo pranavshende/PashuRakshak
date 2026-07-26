@@ -140,6 +140,31 @@ async function seed() {
     console.log(`✅ Created ${outbreakData.length} disease outbreak reports across Maharashtra`);
 
     // =====================================================
+    // 7. MEDICINES
+    // =====================================================
+    console.log('\n[7/7] Seeding Medicines...');
+    const medicines = [
+      // Lumpy Skin Disease
+      { diseaseKey: 'Lumpy Skin Disease', name: 'Antibiotics', usageInstructions: 'Consult vet for secondary infections. Do not use without vet prescription.' },
+      { diseaseKey: 'Lumpy Skin Disease', name: 'Anti-inflammatory drugs', usageInstructions: 'To reduce fever and pain.' },
+      { diseaseKey: 'Lumpy Skin Disease', name: 'Wound Care Spray', usageInstructions: 'Apply topically 2x daily. Keep lesions clean.' },
+      
+      // FMD
+      { diseaseKey: 'FMD', name: 'FMD Vaccine', usageInstructions: 'Annual booster. Preventative only. Will not cure active infection.' },
+      { diseaseKey: 'FMD', name: 'Mild disinfectants', usageInstructions: 'Wash hooves 2x daily. E.g. Potassium Permanganate solution.' },
+      { diseaseKey: 'FMD', name: 'Painkillers (Meloxicam)', usageInstructions: 'Consult Vet. For severe pain and lameness.' },
+      
+      // Mastitis
+      { diseaseKey: 'Mastitis', name: 'Intramammary Antibiotics', usageInstructions: '1 tube per infected quarter every 12h. E.g. Cefquinome or Amoxicillin.' },
+      { diseaseKey: 'Mastitis', name: 'NSAIDs', usageInstructions: 'As prescribed. To reduce swelling and pain.' },
+      { diseaseKey: 'Mastitis', name: 'Frequent Milking', usageInstructions: 'Every 2-4 hours. Strip out infected milk completely.' }
+    ];
+
+    await prisma.medicine.deleteMany(); // Clear existing medicines first
+    await prisma.medicine.createMany({ data: medicines });
+    console.log(`✅ Created ${medicines.length} medicine records`);
+
+    // =====================================================
     // SUMMARY
     // =====================================================
     console.log('\n=========================================');
