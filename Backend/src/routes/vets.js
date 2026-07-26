@@ -5,7 +5,11 @@ const Redis = require('ioredis');
 const { requireAuth } = require('../middlewares/authMiddleware');
 
 // Initialize Redis client
-const redis = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379');
+const redis = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379', {
+  maxRetriesPerRequest: 1,
+  retryStrategy: () => null
+});
+redis.on('error', () => {}); // Silence connection errors if Redis is not running locally
 
 // Get nearby vets (PostGIS + Redis Caching)
 router.get('/nearby', requireAuth, async (req, res) => {

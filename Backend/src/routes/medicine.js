@@ -3,7 +3,11 @@ const router = express.Router();
 const Redis = require('ioredis');
 
 // Initialize Redis client
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: 1,
+  retryStrategy: () => null
+});
+redis.on('error', () => {}); // Silence connection errors if Redis is not running locally
 
 // Static mock database of medicines (In production, this would be in Postgres and manageable by Admins)
 const MEDICINE_DB = {
