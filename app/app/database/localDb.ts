@@ -60,8 +60,16 @@ export const savePredictionLocally = async (
 
 export const getPendingSyncs = async () => {
   if (isWeb || !db) return [];
-  const rows = await db.getAllAsync('SELECT * FROM predictions WHERE synced = 0');
-  return rows;
+  const rows = await db.getAllAsync(
+    `SELECT p.*, s.symptomData 
+     FROM predictions p 
+     LEFT JOIN symptoms s ON p.id = s.predictionId 
+     WHERE p.synced = 0`
+  );
+  return rows.map((row: any) => ({
+    ...row,
+    symptoms: row.symptomData ? JSON.parse(row.symptomData) : null,
+  }));
 };
 
 export const markAsSynced = async (id: string) => {

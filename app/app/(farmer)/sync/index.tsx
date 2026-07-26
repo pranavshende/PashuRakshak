@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { getPendingSyncs } from '../../database/localDb';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { getPendingSyncs, markAsSynced } from '../../database/localDb';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -19,6 +19,53 @@ export default function SyncScreen() {
       setPendingRecords(records);
     } catch (e) {
       console.error("Failed to load pending syncs", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    if (pendingRecords.length === 0) return;
+    setLoading(true);
+    
+    try {
+      // Get JWT token
+      let token = null;
+      if (Platform.OS === 'web') {
+        token = localStorage.getItem('userToken');
+      } else {
+        const SecureStore = require('expo-secure-store');
+        token = await SecureStore.getItemAsync('userToken');
+      }
+
+      const backendUrl = Platform.OS === 'web' 
+        ? 'http://127.0.0.1:5000/predict/sync'
+        : 'http://10.0.2.2:5000/predict/sync';
+
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ records: pendingRecords }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Mark locally as synced
+        for (const id of data.syncedIds) {
+          await markAsSynced(id);
+        }
+        await loadRecords();
+        alert('Sync successful!');
+      } else {
+        alert(data.error || 'Sync failed');
+      }
+    } catch (error) {
+      console.error('Sync error:', error);
+      alert('Failed to connect to the backend server.');
     } finally {
       setLoading(false);
     }
@@ -43,6 +90,12 @@ export default function SyncScreen() {
           <FontAwesome name="arrow-left" size={24} color="#1F2937" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Offline Records</Text>
+        <View style={{ flex: 1 }} />
+        {pendingRecords.length > 0 && !loading && (
+          <TouchableOpacity onPress={handleSync} style={styles.syncBtn}>
+            <Text style={styles.syncBtnText}>Sync Now</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
@@ -76,4 +129,6 @@ const styles = StyleSheet.create({
   dateText: { fontSize: 12, color: '#6B7280' },
   statusBadge: { backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   statusText: { color: '#D97706', fontSize: 12, fontWeight: '600' },
+  syncBtn: { backgroundColor: '#10B981', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  syncBtnText: { color: '#fff', fontWeight: 'bold' },
 });

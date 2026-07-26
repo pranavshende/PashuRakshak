@@ -32,18 +32,27 @@ passport.use(
 // JWT Strategy for protected routes
 const jwtOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-  secretOrKey: process.env.JWT_SECRET || 'super-secret-jwt-key',
+  secretOrKey: process.env.SUPABASE_JWT_SECRET || 'super-secret-jwt-key',
 };
 
 passport.use(
   new JwtStrategy(jwtOptions, async (jwtPayload, done) => {
     try {
-      const user = await prisma.user.findUnique({ where: { id: jwtPayload.id } });
-      if (user) {
-        return done(null, user);
-      } else {
-        return done(null, false);
+      // Supabase stores the user ID in the 'sub' claim
+      let user = await prisma.user.findUnique({ where: { id: jwtPayload.sub } });
+      
+      // Auto-create the user in Prisma if they authenticated via Supabase but don't exist here yet
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            id: jwtPayload.sub,
+            phone: jwtPayload.phone || '',
+            name: jwtPayload.user_metadata?.name || 'Farmer',
+          }
+        });
       }
+      
+      return done(null, user);
     } catch (err) {
       return done(err, false);
     }

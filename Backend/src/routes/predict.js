@@ -4,6 +4,8 @@ const multer = require('multer');
 const axios = require('axios');
 const FormData = require('form-data');
 const { requireAuth } = require('../middlewares/authMiddleware');
+const { validate, syncSchema } = require('../middlewares/validate');
+const prisma = require('../config/db');
 
 // Configure multer to store uploaded files in memory
 const upload = multer({ storage: multer.memoryStorage() });
@@ -46,6 +48,58 @@ router.post('/analyze', requireAuth, upload.single('file'), async (req, res) => 
       return res.status(error.response.status).json({ error: error.response.data });
     }
     res.status(500).json({ error: 'Failed to communicate with the ML service.' });
+  }
+});
+
+// Endpoint to sync offline records
+router.post('/sync', requireAuth, validate(syncSchema), async (req, res) => {
+  try {
+    const { records } = req.body;
+    
+    if (!records || !Array.isArray(records)) {
+      return res.status(400).json({ error: 'Invalid payload. Expected an array of records.' });
+    }
+
+    const userId = req.user.id;
+    const syncedIds = [];
+
+    for (const record of records) {
+      // Upsert the prediction
+      const prediction = await prisma.prediction.upsert({
+        where: { id: record.id },
+        update: {}, // Don't override if it already exists
+        create: {
+          id: record.id,
+          userId: userId,
+          disease: record.disease,
+          confidence: record.confidence,
+          riskLevel: record.riskLevel || 'MEDIUM',
+          imagePath: record.imagePath,
+          createdAt: new Date(record.createdAt || Date.now()),
+          syncedAt: new Date(),
+        }
+      });
+
+      // Insert symptoms if not already present
+      // To avoid unique constraint errors, use upsert for symptoms
+      if (record.symptoms) {
+        await prisma.symptom.upsert({
+          where: { predictionId: record.id },
+          update: {},
+          create: {
+            predictionId: record.id,
+            symptomData: typeof record.symptoms === 'string' ? JSON.parse(record.symptoms) : record.symptoms,
+          }
+        });
+      }
+
+      syncedIds.push(record.id);
+    }
+
+    res.json({ success: true, syncedIds });
+  } catch (error) {
+    console.error('Error syncing records:', error);
+    res.status(500).json({ error: 'Failed to sync records.' });
   }
 });
 
