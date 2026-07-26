@@ -1,0 +1,33 @@
+name: Web App Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Web Bundle
+        run: npx expo export -p web
+
+      - name: Deploy to Vercel (or static host)
+        # Note: Replace with actual deploy step for Vercel/Netlify
+        run: echo "Deploying web-build folder to static hosting"

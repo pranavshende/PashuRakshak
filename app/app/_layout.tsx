@@ -14,6 +14,7 @@ Sentry.init({
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
+import RealtimeAlerts from './components/RealtimeAlerts';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -28,7 +29,7 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -79,6 +80,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <RealtimeAlerts />
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(farmer)" options={{ headerShown: false }} />

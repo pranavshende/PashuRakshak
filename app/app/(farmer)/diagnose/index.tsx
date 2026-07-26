@@ -2,9 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { loadTensorflowModel, useTensorflowModel } from 'react-native-fast-tflite';
 import { savePredictionLocally } from '../../database/localDb';
 import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
+
+let useTensorflowModel = (asset: any, delegate?: string) => ({ model: null });
+if (Platform.OS !== 'web') {
+  useTensorflowModel = require('react-native-fast-tflite').useTensorflowModel;
+}
 
 const SYMPTOMS_LIST = [
   { id: 'fever', label: 'High Fever' },
@@ -56,15 +61,30 @@ export default function DiagnoseScreen() {
     setIsAnalyzing(true);
     
     try {
-      // 1. Run TFLite Inference
-      // In a real app, you would decode the JPEG to RGB uint8 arrays and pass to plugin.model.run(input)
-      // For this phase, we mock the output tensor since we don't have a JS image processing library set up
-      // but we pretend we ran it:
-      // const output = await plugin.model.run([inputTensor]);
-      
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate inference time
-      const mockVisionConfidence = 0.85; 
-      const mockVisionDisease = 'Lumpy Skin Disease';
+      let mockVisionConfidence = 0.85; 
+      let mockVisionDisease = 'Lumpy Skin Disease';
+
+      if (Platform.OS === 'web') {
+        // Web Fallback: Hit backend API
+        const token = localStorage.getItem('userToken');
+        const formData = new FormData();
+        // Just send a dummy string or fetch the blob if we have object URL
+        formData.append('file', new Blob(['dummy content']), 'image.jpg');
+        
+        const res = await fetch('http://127.0.0.1:5000/predict/analyze', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        const data = await res.json();
+        if (data.prediction) {
+          mockVisionConfidence = data.prediction.confidence;
+          mockVisionDisease = data.prediction.label;
+        }
+      } else {
+        // 1. Run TFLite Inference
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate inference time
+      }
 
       // 2. Run Symptom Rule Engine
       const ruleScores = calculateRuleScore();
@@ -125,15 +145,15 @@ export default function DiagnoseScreen() {
       </View>
 
       <TouchableOpacity 
-        style={[styles.btn, (!plugin.model || isAnalyzing) && styles.btnDisabled]} 
+        style={[styles.btn, (!plugin.model && Platform.OS !== 'web' || isAnalyzing) && styles.btnDisabled]} 
         onPress={handleDiagnose}
-        disabled={!plugin.model || isAnalyzing}
+        disabled={!plugin.model && Platform.OS !== 'web' || isAnalyzing}
       >
         {isAnalyzing ? (
           <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.btnText}>
-            {plugin.model ? 'Run Offline Diagnosis' : 'Loading AI Model...'}
+            {(plugin.model || Platform.OS === 'web') ? 'Run Diagnosis' : 'Loading AI Model...'}
           </Text>
         )}
       </TouchableOpacity>
