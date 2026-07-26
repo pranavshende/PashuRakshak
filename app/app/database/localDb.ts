@@ -76,3 +76,8 @@ export const markAsSynced = async (id: string) => {
   if (isWeb || !db) return;
   await db.runAsync('UPDATE predictions SET synced = 1 WHERE id = ?', [id]);
 };
+
+// Dummy default export to prevent Expo Router from crashing
+export default function LocalDbRoute() {
+  return null;
+}

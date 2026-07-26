@@ -1,28 +1,28 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, Text, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
-import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import { COLORS, SPACING, SIZES, TYPOGRAPHY, GLOBAL_STYLES, SHADOWS } from '../../constants/theme';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 export default function DashboardScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [updates, setUpdates] = useState<any[]>([]);
+  const [weather, setWeather] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const mockChartData = [
-    { day: 'Mon', value: 30 },
-    { day: 'Tue', value: 45 },
-    { day: 'Wed', value: 20 },
-    { day: 'Thu', value: 65 },
-    { day: 'Fri', value: 50 },
-    { day: 'Sat', value: 85 },
-    { day: 'Sun', value: 40 },
-  ];
+  useEffect(() => {
+    setTimeout(() => {
+      setWeather({ temp: '28°', condition: 'Sunny', humidity: '45%' });
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   return (
     <View style={styles.container}>
-      {/* Header Profile Section */}
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={styles.avatarContainer}>
@@ -103,15 +103,9 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInUp.duration(600).delay(200).springify()}>
           <Text style={[styles.sectionTitle, { marginTop: SPACING.md }]}>Weekly Scans</Text>
           <View style={GLOBAL_STYLES.card}>
-            <View style={styles.chartContainer}>
-              {mockChartData.map((data, index) => (
-                <View key={index} style={styles.chartBarWrapper}>
-                  <View style={styles.chartBarBackground}>
-                    <View style={[styles.chartBarFill, { height: `${data.value}%`, backgroundColor: data.value > 60 ? COLORS.success : (data.value > 30 ? COLORS.warning : COLORS.error) }]} />
-                  </View>
-                  <Text style={styles.chartDayText}>{data.day}</Text>
-                </View>
-              ))}
+            <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
+              <FontAwesome name="bar-chart" size={32} color={COLORS.borderMedium} />
+              <Text style={{ ...TYPOGRAPHY.body, color: COLORS.textMuted, marginTop: SPACING.sm }}>No scan data this week.</Text>
             </View>
           </View>
         </Animated.View>
@@ -120,42 +114,9 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInUp.duration(600).delay(300).springify()}>
           <Text style={[styles.sectionTitle, { marginTop: SPACING.xl }]}>Recent Activity</Text>
           <View style={GLOBAL_STYLES.card}>
-            {/* Timeline Item 1 */}
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineLeft}>
-                <View style={[styles.timelineDot, { backgroundColor: COLORS.success }]} />
-                <View style={styles.timelineLine} />
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={styles.timelineTitle}>Healthy Scan</Text>
-                <Text style={styles.timelineDesc}>Cow #104 scanned clear.</Text>
-                <Text style={styles.timelineTime}>2 hours ago</Text>
-              </View>
-            </View>
-
-            {/* Timeline Item 2 */}
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineLeft}>
-                <View style={[styles.timelineDot, { backgroundColor: COLORS.warning }]} />
-                <View style={styles.timelineLine} />
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={styles.timelineTitle}>Medium Risk Detected</Text>
-                <Text style={styles.timelineDesc}>Possible Mastitis identified.</Text>
-                <Text style={styles.timelineTime}>Yesterday</Text>
-              </View>
-            </View>
-
-            {/* Timeline Item 3 */}
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineLeft}>
-                <View style={[styles.timelineDot, { backgroundColor: COLORS.secondary }]} />
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={styles.timelineTitle}>AI Chat Consultation</Text>
-                <Text style={styles.timelineDesc}>Asked about feeding schedule.</Text>
-                <Text style={styles.timelineTime}>2 days ago</Text>
-              </View>
+            <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
+              <FontAwesome name="history" size={32} color={COLORS.borderMedium} />
+              <Text style={{ ...TYPOGRAPHY.body, color: COLORS.textMuted, marginTop: SPACING.sm }}>No recent activity to show.</Text>
             </View>
           </View>
         </Animated.View>
@@ -177,7 +138,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: SPACING.lg,
-    paddingTop: 60,
+    paddingTop: 80,
     backgroundColor: COLORS.backgroundBase, // Blend with background
   },
   avatarContainer: {

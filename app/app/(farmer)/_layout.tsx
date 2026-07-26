@@ -1,6 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { Platform } from 'react-native';
 import { COLORS, SHADOWS } from '../../constants/theme';
 
 export default function TabLayout() {
@@ -10,22 +11,24 @@ export default function TabLayout() {
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textMuted,
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           position: 'absolute',
-          bottom: 24,
-          left: 24,
-          right: 24,
+          bottom: 0,
+          left: 0,
+          right: 0,
           backgroundColor: 'rgba(255, 255, 255, 0.98)',
-          borderRadius: 100, // Pill shape floating bar
-          height: 64,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          height: Platform.OS === 'ios' ? 96 : 80,
           borderTopWidth: 0,
-          paddingBottom: 8,
+          paddingBottom: Platform.OS === 'ios' ? 32 : 20,
           paddingTop: 8,
           elevation: 10,
           shadowColor: '#0F172A',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.08,
-          shadowRadius: 30,
+          shadowOffset: { width: 0, height: -10 },
+          shadowOpacity: 0.05,
+          shadowRadius: 20,
         },
         tabBarItemStyle: {
           paddingVertical: 4,
@@ -50,9 +53,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="heatmap"
+        name="community/index"
         options={{
-          title: 'Map',
+          title: 'Alerts',
           tabBarIcon: ({ color }) => <FontAwesome name="map" size={26} color={color} />,
         }}
       />
@@ -66,7 +69,8 @@ export default function TabLayout() {
       
       {/* Hide the rest of the screens from the bottom tab bar */}
       <Tabs.Screen name="capture/index" options={{ href: null }} />
-      <Tabs.Screen name="diagnose/index" options={{ href: null }} />
+      <Tabs.Screen name="iot/index" options={{ href: null }} />
+      <Tabs.Screen name="vets/index" options={{ href: null }} />
       <Tabs.Screen name="medicine" options={{ href: null }} />
       <Tabs.Screen name="score" options={{ href: null }} />
       <Tabs.Screen name="sync/index" options={{ href: null }} />

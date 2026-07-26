@@ -7,17 +7,21 @@ export default function RealtimeAlerts() {
   useEffect(() => {
     // Request notification permissions for Mobile
     if (Platform.OS !== 'web') {
-      Notifications.requestPermissionsAsync();
-      
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-          shouldShowBanner: true,
-          shouldShowList: true,
-        }),
-      });
+      try {
+        Notifications.requestPermissionsAsync();
+        
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+            shouldShowBanner: true,
+            shouldShowList: true,
+          }),
+        });
+      } catch (err) {
+        console.warn('Expo Go does not support remote push notifications in SDK 53+. Please use a dev build (EAS).');
+      }
     }
 
     const channel = supabase

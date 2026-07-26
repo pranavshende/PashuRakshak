@@ -48,6 +48,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// 404 JSON Fallback Handler
+app.use((req, res, next) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.url} not found` });
+});
+
 // The Sentry error handler must be before any other error middleware and after all controllers
 Sentry.setupExpressErrorHandler(app);
 
