@@ -16,7 +16,7 @@ export {
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: '(farmer)',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -65,7 +65,7 @@ function RootLayoutNav() {
       router.replace('/(auth)/login');
     } else if (user && inAuthGroup) {
       // Redirect away from login if authenticated
-      router.replace('/(tabs)');
+      router.replace('/(farmer)' as any);
     }
   }, [user, isLoading, segments]);
 
@@ -73,7 +73,8 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(farmer)" options={{ headerShown: false }} />
+        <Stack.Screen name="(admin)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

@@ -133,6 +133,7 @@ export default function Capture() {
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
       <div className="camera-overlay">
+        <div className="viewfinder-corners"><span></span></div>
         <button className="back-btn" onClick={() => navigate(-1)}>
           <ArrowLeft size={24} color="#fff" />
         </button>

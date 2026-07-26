@@ -43,6 +43,7 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
+      <div className="app-background"></div>
       <Router>
         <AppRoutes />
       </Router>

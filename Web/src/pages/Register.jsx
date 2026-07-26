@@ -71,7 +71,7 @@ export default function Register() {
 
         <div className="auth-footer">
           <Link to="/login" className="link-text">
-            Already have an account? Login
+            Already have an account? <span>Login</span>
           </Link>
         </div>
       </div>

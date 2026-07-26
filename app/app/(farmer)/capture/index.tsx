@@ -34,85 +34,26 @@ export default function CaptureScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync();
       
-      // Resize to save bandwidth, keeping it small as ML model expects 224x224
+      // Resize to save bandwidth
       const resized = await ImageManipulator.manipulateAsync(
         photo.uri,
-        [{ resize: { width: 500 } }],
+        [{ resize: { width: 224, height: 224 } }],
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
       );
 
-      // Get JWT token (Web fallback)
-      let token = null;
-      if (Platform.OS === 'web') {
-        token = localStorage.getItem('userToken');
-      } else {
-        token = await SecureStore.getItemAsync('userToken');
-      }
+      // Navigate to the offline diagnose screen, passing the image URI
+      router.push({
+        pathname: '/(farmer)/diagnose',
+        params: { imageUri: resized.uri }
+      } as any);
 
-      // Create Form Data
-      const formData = new FormData();
-      
-      if (Platform.OS === 'web') {
-        // On Web, FormData expects a true Blob or File object
-        const response = await fetch(resized.uri);
-        const blob = await response.blob();
-        formData.append('file', blob, 'cattle.jpg');
-      } else {
-        // On Native (Android/iOS), React Native expects this specific object format
-        formData.append('file', {
-          uri: resized.uri,
-          name: 'cattle.jpg',
-          type: 'image/jpeg'
-        } as any);
-      }
-
-      // Call Backend Proxy. Web needs localhost, Emulator needs 10.0.2.2
-      const backendUrl = Platform.OS === 'web' 
-        ? 'http://127.0.0.1:5000/predict/analyze'
-        : 'http://10.0.2.2:5000/predict/analyze';
-
-      const response = await fetch(backendUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setResult(data.prediction);
-      } else {
-        alert(data.error || 'Prediction failed');
-      }
     } catch (err) {
       console.error(err);
-      alert('Error analyzing image. Please ensure the backend and ML service are running.');
+      alert('Error capturing image.');
     } finally {
       setIsAnalyzing(false);
     }
   };
-
-  if (result) {
-    return (
-      <View style={styles.resultContainer}>
-        <FontAwesome name="check-circle" size={80} color="#10B981" />
-        <Text style={styles.resultTitle}>Analysis Complete</Text>
-        
-        <View style={styles.resultCard}>
-          <Text style={styles.label}>Detected Condition:</Text>
-          <Text style={styles.value}>{result.label}</Text>
-          
-          <Text style={styles.label}>Confidence:</Text>
-          <Text style={styles.value}>{(result.confidence * 100).toFixed(1)}%</Text>
-        </View>
-
-        <TouchableOpacity style={styles.btn} onPress={() => router.back()}>
-          <Text style={styles.btnText}>Back to Dashboard</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>

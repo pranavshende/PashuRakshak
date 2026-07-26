@@ -12,7 +12,7 @@ export default function Dashboard() {
       {/* Header Profile Section */}
       <header className="dashboard-header">
         <div className="header-text">
-          <h1 className="greeting">Hello, {user?.name?.split(' ')[0] || 'Farmer'} 👋</h1>
+          <h1 className="greeting">Hello, <span>{user?.name?.split(' ')[0] || 'Farmer'}</span> 👋</h1>
           <p className="subtitle">Let's check your cattle's health today.</p>
         </div>
         <button onClick={logout} className="logout-btn" title="Logout">
