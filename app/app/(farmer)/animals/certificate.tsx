@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { storage } from '../../../context/AuthContext';
 
 export default function CertificateScreen() {
   const { id } = useLocalSearchParams();
@@ -17,7 +18,7 @@ export default function CertificateScreen() {
 
   const fetchAnimal = async () => {
     try {
-      const token = localStorage.getItem('userToken');
+      const token = await storage.getItemAsync('userToken');
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/animals/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
 import Animated, { FadeInUp, FadeInDown, FadeInRight } from 'react-native-reanimated';
+import { storage } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 const IS_WEB = Platform.OS === 'web';
@@ -27,7 +28,7 @@ export default function AdminDashboardScreen() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('userToken');
+        const token = await storage.getItemAsync('userToken');
         const res = await fetch(`${API_URL}/admin/stats`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });

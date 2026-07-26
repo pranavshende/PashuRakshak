@@ -5,6 +5,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
 import Animated, { FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, cancelAnimation } from 'react-native-reanimated';
+import { storage } from '../../../context/AuthContext';
 
 export default function SyncScreen() {
   const [pendingRecords, setPendingRecords] = useState<any[]>([]);
@@ -51,13 +52,7 @@ export default function SyncScreen() {
     startRotation();
     
     try {
-      let token = null;
-      if (Platform.OS === 'web') {
-        token = localStorage.getItem('userToken');
-      } else {
-        const SecureStore = require('expo-secure-store');
-        token = await SecureStore.getItemAsync('userToken');
-      }
+      const token = await storage.getItemAsync('userToken');
 
       const backendUrl = `${process.env.EXPO_PUBLIC_API_URL}/predict/sync`;
 
@@ -146,7 +141,7 @@ export default function SyncScreen() {
       ) : pendingRecords.length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconWrapper}>
-            <FontAwesome name="cloud-check" size={48} color={COLORS.success} />
+            <FontAwesome name="check-circle" size={48} color={COLORS.success} />
           </View>
           <Text style={styles.emptyText}>All Caught Up!</Text>
           <Text style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted, marginTop: SPACING.xs }}>Your data is securely backed up to the cloud.</Text>
@@ -185,7 +180,7 @@ const styles = StyleSheet.create({
   statusTitle: { ...TYPOGRAPHY.h3, color: COLORS.textMain },
   statusSub: { ...TYPOGRAPHY.label, color: COLORS.textMuted, marginTop: 2 },
   syncBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: SIZES.radiusXl, gap: SPACING.sm, ...SHADOWS.sm },
-  syncBtnDisabled: { backgroundColor: COLORS.borderMedium, ...SHADOWS.none },
+  syncBtnDisabled: { backgroundColor: COLORS.borderMedium, elevation: 0, shadowOpacity: 0 },
   syncBtnText: { color: '#fff', fontWeight: '700' },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
   emptyIconWrapper: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#D1FAE5', justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.lg },

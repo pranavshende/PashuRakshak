@@ -202,7 +202,7 @@ export default function MedicineScreen() {
 
             <View style={[styles.sectionHeader, { marginTop: SPACING.xl }]}>
               <View style={[styles.iconWrapper, { backgroundColor: COLORS.secondaryLight }]}>
-                <FontAwesome name="medkit" size={16} color={COLORS.secondaryDark} />
+                <FontAwesome name="medkit" size={16} color={COLORS.secondary} />
               </View>
               <Text style={styles.sectionTitle}>Treatment Plan</Text>
             </View>
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm, 
     borderWidth: 1, 
     borderColor: COLORS.borderLight,
-    ...SHADOWS.xs
+    ...SHADOWS.sm
   },
   classicHeader: { 
     flexDirection: 'row', 

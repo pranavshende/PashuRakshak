@@ -1,0 +1,8 @@
+# actionlint configuration file to define known secrets and prevent context-access warnings.
+# https://github.com/rhysd/actionlint/blob/main/docs/config.md
+
+self-hosted-runners: []
+
+# A list of secrets used in workflows. Defining them here prevents linter warnings.
+secrets:
+  - EXPO_TOKEN

@@ -4,6 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
 import Animated, { FadeInDown, FadeInRight, FadeInUp } from 'react-native-reanimated';
+import { storage } from '../../../context/AuthContext';
 
 import * as Location from 'expo-location';
 
@@ -30,7 +31,7 @@ export default function VetSearchScreen() {
         const lon = location.coords.longitude;
 
         // Fetch from backend PostGIS
-        const token = localStorage.getItem('userToken'); // Or from secure store
+        const token = await storage.getItemAsync('userToken');
         const response = await fetch(`${API_URL}/vets/nearby?lat=${lat}&lon=${lon}&radius=50000`, {
           headers: {
             'Authorization': `Bearer ${token}`

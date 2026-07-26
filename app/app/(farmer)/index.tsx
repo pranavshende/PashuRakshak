@@ -83,7 +83,7 @@ export default function DashboardScreen() {
               <Text style={styles.actionCardText}>AI Vet</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/(farmer)/heatmap' as any)}>
+            <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/(farmer)/community' as any)}>
               <View style={[styles.actionIconWrapper, { backgroundColor: '#FEF3C7' }]}>
                 <FontAwesome name="map" size={24} color={COLORS.warning} />
               </View>

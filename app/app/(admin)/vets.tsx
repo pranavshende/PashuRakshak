@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
 import Animated, { FadeInDown, FadeInUp, Layout } from 'react-native-reanimated';
+import { storage } from '../../context/AuthContext';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -24,7 +25,7 @@ export default function VetManagementScreen() {
   useEffect(() => {
     const fetchVets = async () => {
       try {
-        const token = localStorage.getItem('userToken');
+        const token = await storage.getItemAsync('userToken');
         const res = await fetch(`${API_URL}/admin/vets`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { storage } from '../../../context/AuthContext';
 
 export default function DiagnoseScreen() {
   const { imageUri } = useLocalSearchParams();
@@ -23,7 +24,7 @@ export default function DiagnoseScreen() {
     const analyzeImage = async () => {
       try {
         const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
-        const token = localStorage.getItem('userToken'); // Or secure store
+        const token = await storage.getItemAsync('userToken');
 
         const formData = new FormData();
         // React Native FormData requires { uri, name, type } for files

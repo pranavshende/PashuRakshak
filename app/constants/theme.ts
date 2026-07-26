@@ -7,6 +7,7 @@ export const COLORS = {
   primaryGlow: 'rgba(22, 163, 74, 0.2)',
 
   secondary: '#38BDF8', // Sky Blue
+  secondaryDark: '#0369A1', // Dark Blue/Sky 700
   secondaryLight: '#E0F2FE', // Light Blue
 
   backgroundBase: '#FFFFFF', // Pure White

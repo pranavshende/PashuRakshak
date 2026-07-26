@@ -9,7 +9,7 @@ export function useAuth() {
 }
 
 // Wrapper to support both Web (localStorage) and Native (SecureStore)
-const storage = {
+export const storage = {
   getItemAsync: async (key: string) => {
     if (Platform.OS === 'web') {
       return localStorage.getItem(key);

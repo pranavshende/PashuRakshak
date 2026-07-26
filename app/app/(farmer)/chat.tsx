@@ -4,7 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../../context/AuthContext';
 import { Audio } from 'expo-av';
 import Animated, { FadeInUp, FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, cancelAnimation } from 'react-native-reanimated';
 
@@ -97,12 +97,7 @@ export default function ChatScreen() {
 
     try {
       const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:5000';
-      let token = null;
-      if (Platform.OS === 'web') {
-        token = localStorage.getItem('userToken');
-      } else {
-        token = await SecureStore.getItemAsync('userToken');
-      }
+      const token = await storage.getItemAsync('userToken');
 
       const formData = new FormData();
       const filename = uri.split('/').pop() || 'recording.m4a';
@@ -164,12 +159,7 @@ export default function ChatScreen() {
 
     try {
       const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:5000';
-      let token = null;
-      if (Platform.OS === 'web') {
-        token = localStorage.getItem('userToken');
-      } else {
-        token = await SecureStore.getItemAsync('userToken');
-      }
+      const token = await storage.getItemAsync('userToken');
       
       const res = await fetch(`${API_URL}/chat`, {
         method: 'POST',

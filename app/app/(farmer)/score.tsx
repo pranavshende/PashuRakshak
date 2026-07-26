@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { API_BASE_URL } from '../../config/api';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
 import Animated, { FadeInDown, FadeInUp, FadeInRight } from 'react-native-reanimated';
+import { storage } from '../../context/AuthContext';
 
 export default function FarmScoreScreen() {
   const [data, setData] = useState<any>(null);
@@ -17,7 +18,7 @@ export default function FarmScoreScreen() {
 
   const fetchScore = async () => {
     try {
-      const token = localStorage.getItem('userToken');
+      const token = await storage.getItemAsync('userToken');
       const res = await fetch(`${API_BASE_URL}/farm/score`, {
         headers: { Authorization: `Bearer ${token}` }
       });
