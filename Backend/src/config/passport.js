@@ -50,13 +50,18 @@ passport.use(
       
       // Auto-create the user in Prisma if they authenticated via Supabase but don't exist here yet
       if (!user) {
-        user = await prisma.user.create({
-          data: {
-            id: userId,
-            phone: jwtPayload.phone || '',
-            name: jwtPayload.user_metadata?.name || 'Farmer',
-          }
-        });
+        try {
+          user = await prisma.user.create({
+            data: {
+              id: userId,
+              phone: jwtPayload.phone || '',
+              name: jwtPayload.user_metadata?.name || 'Farmer',
+            }
+          });
+        } catch (createError) {
+          // This happens if the token is stale (e.g., UUID changed but phone is taken)
+          return done(null, false, { message: 'Token is stale or user conflict. Please log in again.' });
+        }
       }
       
       return done(null, user);
