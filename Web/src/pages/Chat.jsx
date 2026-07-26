@@ -21,7 +21,7 @@ export default function Chat() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('userToken');
       const res = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: {

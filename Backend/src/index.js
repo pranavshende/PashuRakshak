@@ -48,8 +48,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// The error handler must be before any other error middleware and after all controllers
+// The Sentry error handler must be before any other error middleware and after all controllers
 Sentry.setupExpressErrorHandler(app);
+
+// Global Error Handler to return JSON instead of HTML
+app.use((err, req, res, next) => {
+  console.error('Unhandled Error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
