@@ -1,6 +1,6 @@
 require('dotenv').config();
-const prisma = require('./src/config/db');
-const bcrypt = require('bcryptjs');
+const prisma = require('../src/config/db');
+const bcrypt = require('bcrypt');
 
 async function seed() {
   console.log('🌱 Starting database seed...\n');
@@ -15,20 +15,20 @@ async function seed() {
 
     const admin = await prisma.user.upsert({
       where: { phone: '9000000001' },
-      update: {},
-      create: { name: 'Admin PashuRakshak', phone: '9000000001', role: 'ADMIN' }
+      update: { password: hashedPass },
+      create: { name: 'Admin PashuRakshak', phone: '9000000001', role: 'ADMIN', password: hashedPass }
     });
 
     const farmer1 = await prisma.user.upsert({
       where: { phone: '9000000002' },
-      update: {},
-      create: { name: 'Ramesh Patil', phone: '9000000002', role: 'FARMER' }
+      update: { password: hashedPass },
+      create: { name: 'Ramesh Patil', phone: '9000000002', role: 'FARMER', password: hashedPass }
     });
 
     const farmer2 = await prisma.user.upsert({
       where: { phone: '9000000003' },
-      update: {},
-      create: { name: 'Sunita Devi', phone: '9000000003', role: 'FARMER' }
+      update: { password: hashedPass },
+      create: { name: 'Sunita Devi', phone: '9000000003', role: 'FARMER', password: hashedPass }
     });
 
     console.log(`✅ Created Users: Admin, ${farmer1.name}, ${farmer2.name}`);
