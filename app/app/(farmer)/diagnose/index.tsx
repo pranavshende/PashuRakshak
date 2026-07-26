@@ -16,7 +16,11 @@ const SYMPTOMS_LIST = [
   { id: 'blisters', label: 'Skin Blisters / Nodules' },
   { id: 'salivation', label: 'Excessive Salivation' },
   { id: 'swelling', label: 'Swollen Udder' },
-  { id: 'lameness', label: 'Lameness' }
+  { id: 'lameness', label: 'Lameness' },
+  { id: 'nasal_discharge', label: 'Nasal Discharge' },
+  { id: 'loss_appetite', label: 'Loss of Appetite' },
+  { id: 'milk_drop', label: 'Sudden Drop in Milk' },
+  { id: 'mouth_ulcers', label: 'Mouth Ulcers' }
 ];
 
 export default function DiagnoseScreen() {
@@ -34,18 +38,29 @@ export default function DiagnoseScreen() {
   };
 
   const calculateRuleScore = () => {
-    // Basic Mock Rule Engine
+    // Advanced Weighted Matrix Rule Engine
     let lsdScore = 0;
     let fmdScore = 0;
     let mastitisScore = 0;
     
+    // Core critical symptoms (High weight)
     if (selectedSymptoms['blisters']) lsdScore += 0.8;
-    if (selectedSymptoms['fever']) { lsdScore += 0.2; fmdScore += 0.3; mastitisScore += 0.2; }
-    if (selectedSymptoms['salivation']) fmdScore += 0.7;
-    if (selectedSymptoms['lameness']) fmdScore += 0.2;
-    if (selectedSymptoms['swelling']) mastitisScore += 0.8;
+    if (selectedSymptoms['salivation']) fmdScore += 0.6;
+    if (selectedSymptoms['mouth_ulcers']) fmdScore += 0.7;
+    if (selectedSymptoms['lameness']) fmdScore += 0.3;
+    if (selectedSymptoms['swelling']) mastitisScore += 0.9;
+    
+    // Generic symptoms (Low weight, additive)
+    if (selectedSymptoms['fever']) { lsdScore += 0.15; fmdScore += 0.15; mastitisScore += 0.1; }
+    if (selectedSymptoms['loss_appetite']) { lsdScore += 0.1; fmdScore += 0.1; mastitisScore += 0.1; }
+    if (selectedSymptoms['nasal_discharge']) { lsdScore += 0.2; fmdScore += 0.1; }
+    if (selectedSymptoms['milk_drop']) { lsdScore += 0.1; fmdScore += 0.1; mastitisScore += 0.3; }
 
-    return { lsdScore, fmdScore, mastitisScore };
+    return { 
+      lsdScore: Math.min(lsdScore, 1.0), 
+      fmdScore: Math.min(fmdScore, 1.0), 
+      mastitisScore: Math.min(mastitisScore, 1.0) 
+    };
   };
 
   const handleDiagnose = async () => {
@@ -89,15 +104,31 @@ export default function DiagnoseScreen() {
       // 2. Run Symptom Rule Engine
       const ruleScores = calculateRuleScore();
       
-      // 3. Hybrid Blending (70% Vision, 30% Rules)
-      const ruleLSD = Math.min(ruleScores.lsdScore, 1.0);
-      const blendedLSDConfidence = (mockVisionConfidence * 0.7) + (ruleLSD * 0.3);
+      // 3. Hybrid Blending (AI Output + Rule Engine)
+      // Base calculation: We find the highest scoring rule disease to match against the vision model
+      const { lsdScore, fmdScore, mastitisScore } = calculateRuleScore();
+      
+      let finalDisease = mockVisionDisease;
+      let finalConfidence = mockVisionConfidence;
+      
+      if (mockVisionDisease === 'Lumpy Skin Disease') {
+        finalConfidence = (mockVisionConfidence * 0.6) + (lsdScore * 0.4);
+      } else if (mockVisionDisease === 'FMD') {
+        finalConfidence = (mockVisionConfidence * 0.6) + (fmdScore * 0.4);
+      } else if (mockVisionDisease === 'Mastitis') {
+        finalConfidence = (mockVisionConfidence * 0.6) + (mastitisScore * 0.4);
+      } else {
+        // If vision is unsure, fallback heavily to rules
+        if (lsdScore > 0.6) { finalDisease = 'Lumpy Skin Disease'; finalConfidence = lsdScore; }
+        else if (fmdScore > 0.6) { finalDisease = 'FMD'; finalConfidence = fmdScore; }
+        else if (mastitisScore > 0.6) { finalDisease = 'Mastitis'; finalConfidence = mastitisScore; }
+      }
       
       const result = {
         id: Math.random().toString(36).substring(7),
-        disease: blendedLSDConfidence > 0.6 ? mockVisionDisease : 'Unknown/Healthy',
-        confidence: blendedLSDConfidence,
-        riskLevel: blendedLSDConfidence > 0.75 ? 'HIGH' : 'MEDIUM',
+        disease: finalConfidence > 0.5 ? finalDisease : 'Unknown/Healthy',
+        confidence: finalConfidence,
+        riskLevel: finalConfidence > 0.75 ? 'HIGH' : (finalConfidence > 0.5 ? 'MEDIUM' : 'LOW'),
         imagePath: typeof imageUri === 'string' ? imageUri : '',
       };
 

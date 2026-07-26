@@ -50,6 +50,19 @@ export default function DashboardScreen() {
           <Text style={styles.statLabel}>Issues Found</Text>
         </View>
       </View>
+
+      {/* New Features Row */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/medicine')}>
+          <FontAwesome name="medkit" size={24} color="#2563EB" />
+          <Text style={styles.actionBtnText}>Medicines</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/settings')}>
+          <FontAwesome name="cog" size={24} color="#4B5563" />
+          <Text style={styles.actionBtnText}>Settings</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -157,4 +170,31 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 4,
   },
+  actionRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginTop: 20,
+    justifyContent: 'space-between',
+    backgroundColor: 'transparent',
+  },
+  actionBtn: {
+    backgroundColor: '#fff',
+    width: '47%',
+    padding: 16,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  actionBtnText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#374151'
+  }
 });

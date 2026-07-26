@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const predictRoutes = require('./routes/predict');
 const adminRoutes = require('./routes/admin');
 const vetRoutes = require('./routes/vets');
+const medicineRoutes = require('./routes/medicine');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/auth', authRoutes);
 app.use('/predict', predictRoutes);
 app.use('/admin', adminRoutes);
 app.use('/vets', vetRoutes);
+app.use('/medicine', medicineRoutes);
 
 // Protected Route Example
 app.get('/protected', passport.authenticate('jwt', { session: false }), (req, res) => {

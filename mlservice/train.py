@@ -74,9 +74,12 @@ def main():
     # Data Augmentation to improve generalization
     train_datagen = ImageDataGenerator(
         rescale=1./255,
-        rotation_range=20,
+        rotation_range=30,
         width_shift_range=0.2,
         height_shift_range=0.2,
+        zoom_range=0.2,
+        shear_range=0.15,
+        brightness_range=[0.8, 1.2],
         horizontal_flip=True,
         validation_split=0.2 # 20% for validation
     )
@@ -110,13 +113,40 @@ def main():
     model, base_model = create_model()
     
     print("Phase 1: Training the custom classification head...")
-    history = model.fit(
-        train_generator,
+    history_head = model.fit(
+        train_datagen.flow_from_directory(
+            DATASET_DIR, target_size=IMG_SIZE, batch_size=BATCH_SIZE, class_mode='categorical', classes=CLASSES, subset='training'
+        ),
         validation_data=val_generator,
         epochs=EPOCHS
     )
     
-    plot_training(history)
+    print("Phase 2: Fine-Tuning the Base Model...")
+    # Unfreeze the top layers of the base model
+    base_model.trainable = True
+    fine_tune_at = 100
+    for layer in base_model.layers[:fine_tune_at]:
+        layer.trainable = False
+        
+    # Recompile model with a lower learning rate
+    model.compile(optimizer=Adam(learning_rate=1e-5), 
+                  loss='categorical_crossentropy', 
+                  metrics=['accuracy'])
+                  
+    # Train for more epochs
+    FINE_TUNE_EPOCHS = 10
+    total_epochs = EPOCHS + FINE_TUNE_EPOCHS
+    
+    history_fine = model.fit(
+        train_datagen.flow_from_directory(
+            DATASET_DIR, target_size=IMG_SIZE, batch_size=BATCH_SIZE, class_mode='categorical', classes=CLASSES, subset='training'
+        ),
+        validation_data=val_generator,
+        epochs=total_epochs,
+        initial_epoch=history_head.epoch[-1]
+    )
+    
+    plot_training(history_fine)
     
     print("Exporting model to TensorFlow Lite format...")
     export_to_tflite(model)
