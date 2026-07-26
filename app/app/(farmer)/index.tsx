@@ -51,14 +51,40 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* New Features Row */}
+      {/* New Features Row 1 */}
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/medicine')}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/medicine' as any)}>
           <FontAwesome name="medkit" size={24} color="#2563EB" />
           <Text style={styles.actionBtnText}>Medicines</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/settings')}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/animals' as any)}>
+          <FontAwesome name="paw" size={24} color="#8B5CF6" />
+          <Text style={styles.actionBtnText}>My Herd</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* New Features Row 2 */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/chat' as any)}>
+          <FontAwesome name="comments" size={24} color="#10B981" />
+          <Text style={styles.actionBtnText}>AI Vet Chat</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/heatmap' as any)}>
+          <FontAwesome name="map" size={24} color="#F59E0B" />
+          <Text style={styles.actionBtnText}>Disease Map</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Settings Row */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/score' as any)}>
+          <FontAwesome name="line-chart" size={24} color="#3B82F6" />
+          <Text style={styles.actionBtnText}>Farm Score</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(farmer)/settings' as any)}>
           <FontAwesome name="cog" size={24} color="#4B5563" />
           <Text style={styles.actionBtnText}>Settings</Text>
         </TouchableOpacity>

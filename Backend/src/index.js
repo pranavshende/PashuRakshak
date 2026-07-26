@@ -9,6 +9,10 @@ const predictRoutes = require('./routes/predict');
 const adminRoutes = require('./routes/admin');
 const vetRoutes = require('./routes/vets');
 const medicineRoutes = require('./routes/medicine');
+const animalRoutes = require('./routes/animals');
+const chatRoutes = require('./routes/chat');
+const outbreakRoutes = require('./routes/outbreaks');
+const farmRoutes = require('./routes/farm');
 
 const app = express();
 
@@ -29,6 +33,10 @@ app.use('/predict', predictRoutes);
 app.use('/admin', adminRoutes);
 app.use('/vets', vetRoutes);
 app.use('/medicine', medicineRoutes);
+app.use('/animals', animalRoutes);
+app.use('/chat', chatRoutes);
+app.use('/outbreaks', outbreakRoutes);
+app.use('/farm', farmRoutes);
 
 // Protected Route Example
 app.get('/protected', passport.authenticate('jwt', { session: false }), (req, res) => {

@@ -103,4 +103,30 @@ router.post('/sync', requireAuth, validate(syncSchema), async (req, res) => {
   }
 });
 
+// Update recovery status for a prediction
+router.post('/:id/recovery', requireAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    // Ensure the prediction belongs to the user
+    const existing = await prisma.prediction.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Prediction not found.' });
+    }
+
+    const updated = await prisma.prediction.update({
+      where: { id: req.params.id },
+      data: { recoveryStatus: status }
+    });
+
+    res.json({ success: true, prediction: updated });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update recovery status.' });
+  }
+});
+
 module.exports = router;
