@@ -32,7 +32,7 @@ export default function Login() {
   };
 
   return (
-    <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-gradient)' }}>
+    <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', background: 'var(--bg-gradient)', padding: '20px' }}>
       <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h1 style={{ color: 'var(--primary-dark)', marginBottom: '8px' }}>PashuRakshak</h1>

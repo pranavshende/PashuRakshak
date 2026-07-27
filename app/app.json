@@ -36,7 +36,6 @@
         }
       ],
       "expo-secure-store",
-      "@sentry/react-native",
       "expo-sqlite"
     ],
     "experiments": {

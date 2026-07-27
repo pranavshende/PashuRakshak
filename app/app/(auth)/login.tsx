@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, ScrollView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, TYPOGRAPHY, GLOBAL_STYLES } from '../../constants/theme';
@@ -46,8 +46,13 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.content}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+          <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.content}>
         <View style={styles.header}>
           <Text style={TYPOGRAPHY.h1}>PashuRakshak</Text>
           <Text style={styles.subtitle}>Sign in to your account</Text>
@@ -90,8 +95,10 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
         </Link>
-      </Animated.View>
-    </View>
+          </Animated.View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -99,6 +106,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundBase,
+  },
+  scrollContainer: {
+    flexGrow: 1,
   },
   content: {
     flex: 1,
