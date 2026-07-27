@@ -11,8 +11,8 @@ app = FastAPI(title="PashuRakshak ML Service")
 # Resolve model files relative to this file's location
 _dir = os.path.dirname(__file__)
 model = CattleClassifier(
-    os.path.join(_dir, 'cattlecare_v1.tflite'),
-    os.path.join(_dir, 'labels.txt')
+    os.path.join(_dir, 'cattlecare_v2.tflite'),
+    os.path.join(_dir, 'labels_v2.txt')
 )
 
 @app.post("/predict")

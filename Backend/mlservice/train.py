@@ -1,156 +1,117 @@
 import os
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow import keras
+from tensorflow.keras import layers
 from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
-import matplotlib.pyplot as plt
 
-# Configuration
-DATASET_DIR = 'dataset'
+# 1. Configuration
+DATASET_DIR = os.path.join(os.path.dirname(__file__), 'dataset')
+MODEL_SAVE_PATH = os.path.join(os.path.dirname(__file__), 'cattlecare_v2.tflite')
+LABELS_SAVE_PATH = os.path.join(os.path.dirname(__file__), 'labels_v2.txt')
+
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
-EPOCHS = 10
-CLASSES = ['FMD', 'Healthy_Cow', 'LSD', 'Mastitis']
-MODEL_NAME = 'cattlecare_v1.tflite'
+EPOCHS = 10 # You can increase this when using real data
 
-def create_model():
-    # Load MobileNetV2 without the top classification layer
-    base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+def main():
+    print(f"Loading dataset from: {DATASET_DIR}")
     
-    # Freeze the base model layers initially
+    # 2. Load dataset
+    # This automatically infers classes from the subdirectories
+    train_ds = tf.keras.utils.image_dataset_from_directory(
+        DATASET_DIR,
+        validation_split=0.2,
+        subset="training",
+        seed=123,
+        image_size=IMG_SIZE,
+        batch_size=BATCH_SIZE,
+        label_mode='categorical' # one-hot encoding for multi-class
+    )
+    
+    val_ds = tf.keras.utils.image_dataset_from_directory(
+        DATASET_DIR,
+        validation_split=0.2,
+        subset="validation",
+        seed=123,
+        image_size=IMG_SIZE,
+        batch_size=BATCH_SIZE,
+        label_mode='categorical'
+    )
+    
+    class_names = train_ds.class_names
+    print(f"Detected classes: {class_names}")
+    
+    # Save labels.txt
+    with open(LABELS_SAVE_PATH, 'w') as f:
+        for cls in class_names:
+            f.write(f"{cls}\n")
+    print(f"Saved labels to {LABELS_SAVE_PATH}")
+
+    # Optimize dataset for performance
+    AUTOTUNE = tf.data.AUTOTUNE
+    train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
+    val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
+    
+    # 3. Build Model (Transfer Learning with MobileNetV2)
+    # Data Augmentation layer to help with small datasets
+    data_augmentation = keras.Sequential([
+        layers.RandomFlip("horizontal"),
+        layers.RandomRotation(0.1),
+        layers.RandomZoom(0.1),
+    ])
+    
+    # Base model from MobileNetV2 (pre-trained on ImageNet)
+    # Note: MobileNetV2 expects input values in [-1, 1], so we use Rescaling
+    base_model = MobileNetV2(
+        input_shape=IMG_SIZE + (3,),
+        include_top=False,
+        weights='imagenet'
+    )
+    
+    # Freeze the base model
     base_model.trainable = False
     
-    # Add custom classification head
-    x = base_model.output
-    x = GlobalAveragePooling2D()(x)
-    x = Dense(128, activation='relu')(x)
-    x = Dropout(0.5)(x)
-    predictions = Dense(len(CLASSES), activation='softmax')(x)
+    # Build complete model
+    inputs = keras.Input(shape=IMG_SIZE + (3,))
+    x = data_augmentation(inputs)
+    # Rescale to [-1, 1] for MobileNetV2
+    x = layers.Rescaling(1./127.5, offset=-1)(x)
+    x = base_model(x, training=False)
+    x = layers.GlobalAveragePooling2D()(x)
+    x = layers.Dropout(0.2)(x)
+    outputs = layers.Dense(len(class_names), activation='softmax')(x)
     
-    model = Model(inputs=base_model.input, outputs=predictions)
-    model.compile(optimizer=Adam(learning_rate=0.001), 
-                  loss='categorical_crossentropy', 
-                  metrics=['accuracy'])
-    return model, base_model
-
-def plot_training(history):
-    acc = history.history['accuracy']
-    val_acc = history.history['val_accuracy']
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
+    model = keras.Model(inputs, outputs)
     
-    epochs_range = range(len(acc))
+    model.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        loss='categorical_crossentropy',
+        metrics=['accuracy']
+    )
     
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs_range, acc, label='Training Accuracy')
-    plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-    plt.legend(loc='lower right')
-    plt.title('Training and Validation Accuracy')
+    model.summary()
     
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs_range, loss, label='Training Loss')
-    plt.plot(epochs_range, val_loss, label='Validation Loss')
-    plt.legend(loc='upper right')
-    plt.title('Training and Validation Loss')
-    plt.savefig('training_history.png')
-    print("Training plot saved to 'training_history.png'")
-
-def export_to_tflite(model):
+    # 4. Train the model
+    print("Starting training...")
+    history = model.fit(
+        train_ds,
+        validation_data=val_ds,
+        epochs=EPOCHS
+    )
+    
+    # 5. Convert to TFLite
+    print("Converting model to TFLite...")
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     # Optimize for size and latency
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     tflite_model = converter.convert()
     
-    with open(MODEL_NAME, 'wb') as f:
+    # Save the TFLite model
+    with open(MODEL_SAVE_PATH, 'wb') as f:
         f.write(tflite_model)
-    print(f"Model successfully exported to {MODEL_NAME}")
-
-def main():
-    print("Starting ML Model Retraining Pipeline...")
-    
-    # Data Augmentation to improve generalization
-    train_datagen = ImageDataGenerator(
-        rescale=1./255,
-        rotation_range=30,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        zoom_range=0.2,
-        shear_range=0.15,
-        brightness_range=[0.8, 1.2],
-        horizontal_flip=True,
-        validation_split=0.2 # 20% for validation
-    )
-    
-    print("Loading Dataset...")
-    train_generator = train_datagen.flow_from_directory(
-        DATASET_DIR,
-        target_size=IMG_SIZE,
-        batch_size=BATCH_SIZE,
-        class_mode='categorical',
-        classes=CLASSES,
-        subset='training'
-    )
-    
-    val_generator = train_datagen.flow_from_directory(
-        DATASET_DIR,
-        target_size=IMG_SIZE,
-        batch_size=BATCH_SIZE,
-        class_mode='categorical',
-        classes=CLASSES,
-        subset='validation'
-    )
-    
-    # Check if data was found
-    if train_generator.samples == 0:
-        print("\nERROR: No images found in 'dataset/'. Please add images into the respective class folders.")
-        return
         
-    print(f"Found {train_generator.samples} training images and {val_generator.samples} validation images.")
-    
-    model, base_model = create_model()
-    
-    print("Phase 1: Training the custom classification head...")
-    history_head = model.fit(
-        train_datagen.flow_from_directory(
-            DATASET_DIR, target_size=IMG_SIZE, batch_size=BATCH_SIZE, class_mode='categorical', classes=CLASSES, subset='training'
-        ),
-        validation_data=val_generator,
-        epochs=EPOCHS
-    )
-    
-    print("Phase 2: Fine-Tuning the Base Model...")
-    # Unfreeze the top layers of the base model
-    base_model.trainable = True
-    fine_tune_at = 100
-    for layer in base_model.layers[:fine_tune_at]:
-        layer.trainable = False
-        
-    # Recompile model with a lower learning rate
-    model.compile(optimizer=Adam(learning_rate=1e-5), 
-                  loss='categorical_crossentropy', 
-                  metrics=['accuracy'])
-                  
-    # Train for more epochs
-    FINE_TUNE_EPOCHS = 10
-    total_epochs = EPOCHS + FINE_TUNE_EPOCHS
-    
-    history_fine = model.fit(
-        train_datagen.flow_from_directory(
-            DATASET_DIR, target_size=IMG_SIZE, batch_size=BATCH_SIZE, class_mode='categorical', classes=CLASSES, subset='training'
-        ),
-        validation_data=val_generator,
-        epochs=total_epochs,
-        initial_epoch=history_head.epoch[-1]
-    )
-    
-    plot_training(history_fine)
-    
-    print("Exporting model to TensorFlow Lite format...")
-    export_to_tflite(model)
-    print("Done! The new model is ready to be used by the FastAPI service.")
+    print(f"[OK] Successfully saved TFLite model to {MODEL_SAVE_PATH}")
+    print("Training complete! Your model is ready to be used by the backend.")
 
 if __name__ == '__main__':
     main()
