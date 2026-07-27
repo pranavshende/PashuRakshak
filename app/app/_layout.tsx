@@ -2,7 +2,7 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import 'react-native-reanimated';
 import * as Sentry from '@sentry/react-native';
 
@@ -63,24 +63,29 @@ function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    
+
     if (!user && !inAuthGroup) {
-      // Redirect to login if not authenticated
+      hasRedirected.current = true;
       router.replace('/(auth)/login');
     } else if (user && inAuthGroup) {
-      // Redirect away from login if authenticated
+      hasRedirected.current = true;
       router.replace('/(farmer)' as any);
+    } else {
+      hasRedirected.current = false;
     }
-  }, [user, isLoading, segments]);
+    // Only depend on user and isLoading — segments changes should not re-trigger navigation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isLoading]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <RealtimeAlerts />
+      {user && <RealtimeAlerts />}
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(farmer)" options={{ headerShown: false }} />
