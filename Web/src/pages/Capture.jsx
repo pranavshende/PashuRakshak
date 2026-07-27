@@ -1,170 +1,288 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Camera, UploadCloud, AlertCircle, Loader } from 'lucide-react';
+import { ArrowLeft, Upload, RotateCcw, Zap } from 'lucide-react';
+import TopHeaderBanner from '../components/TopHeaderBanner';
+import RiskBadge from '../components/RiskBadge';
+import ConfidenceBar from '../components/ConfidenceBar';
+import { API_BASE_URL } from '../config/api';
+
+const MODELS = [
+  { id: 'gemini', label: 'Gemini 2.0 Flash', badge: 'Cloud', badgeCls: 'badge-cloud', icon: '⚡' },
+  { id: 'localml', label: 'Local ML Model', badge: 'Local', badgeCls: 'badge-local', icon: '🖥️' },
+  { id: 'nano', label: 'Gemini Nano', badge: 'On-Device', badgeCls: 'badge-ondevice', icon: '📱' },
+  { id: 'edge', label: 'Edge Rulebook', badge: 'Offline', badgeCls: 'badge-offline', icon: '📖' },
+];
 
 export default function Capture() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const fileRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
   const [permissionError, setPermissionError] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('gemini');
+  const [dragOver, setDragOver] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    startCamera();
-    return () => stopCamera();
-  }, []);
 
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-    } catch (err) {
-      console.error('Error accessing camera:', err);
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      setStream(s);
+      setCameraActive(true);
+      setResult(null);
+      if (videoRef.current) videoRef.current.srcObject = s;
+    } catch {
       setPermissionError(true);
     }
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+    stream?.getTracks().forEach(t => t.stop());
+    setStream(null);
+    setCameraActive(false);
+  };
+
+  const analyzeBlob = async (blob) => {
+    setIsAnalyzing(true);
+    setPreviewUrl(URL.createObjectURL(blob));
+    try {
+      const token = localStorage.getItem('userToken');
+      const formData = new FormData();
+      formData.append('file', blob, 'cattle.jpg');
+      const res = await fetch(`${API_BASE_URL}/predict/analyze?model=${selectedModel}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.prediction) {
+        setResult(data.prediction);
+        stopCamera();
+      } else {
+        alert(data.error || 'Prediction failed. Please try again.');
+      }
+    } catch {
+      alert('Network error. Ensure backend is running.');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  const takePicture = async () => {
+  const takePicture = () => {
     if (!videoRef.current || !canvasRef.current) return;
-    
-    setIsAnalyzing(true);
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    canvas.toBlob(async (blob) => {
-      if (!blob) {
-        setIsAnalyzing(false);
-        return;
-      }
-      try {
-        const token = localStorage.getItem('userToken');
-        const formData = new FormData();
-        formData.append('file', blob, 'cattle.jpg');
-
-        const response = await fetch('http://localhost:5000/predict/analyze', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData,
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-          setResult(data.prediction);
-          stopCamera();
-        } else {
-          alert(data.error || 'Prediction failed');
-        }
-      } catch (err) {
-        console.error(err);
-        alert('Error analyzing image. Ensure backend is running.');
-      } finally {
-        setIsAnalyzing(false);
-      }
-    }, 'image/jpeg', 0.8);
+    const v = videoRef.current, c = canvasRef.current;
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    c.toBlob(b => b && analyzeBlob(b), 'image/jpeg', 0.85);
   };
 
+  const handleFileChange = (file) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    analyzeBlob(file);
+  };
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault(); setDragOver(false);
+    handleFileChange(e.dataTransfer.files[0]);
+  }, [selectedModel]);
+
+  const reset = () => { setResult(null); setPreviewUrl(null); setCameraActive(false); stopCamera(); };
+
   return (
-    <div className="container" style={{ padding: '40px 24px', maxWidth: '800px', margin: '0 auto' }}>
-      
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-        <button onClick={() => navigate(-1)} className="btn btn-ghost" style={{ padding: '8px' }}>
-          <ArrowLeft size={24} />
-        </button>
-        <div>
-          <h1 style={{ fontSize: '24px', margin: 0 }}>AI Disease Detection</h1>
-          <p style={{ margin: 0, fontSize: '14px' }}>Scan your livestock for instant health analysis</p>
+    <div>
+      <TopHeaderBanner title="AI Disease Scanner" subtitle="Scan cattle for instant AI-powered diagnosis" />
+
+      {/* Model Selector */}
+      <div className="card mb-4">
+        <div className="section-title">Select AI Model</div>
+        <div className="model-selector">
+          {MODELS.map(m => (
+            <button
+              key={m.id}
+              className={`model-option${selectedModel === m.id ? ' active' : ''}`}
+              onClick={() => setSelectedModel(m.id)}
+            >
+              <span>{m.icon}</span>
+              <span>{m.label}</span>
+              <span className={`badge ${m.badgeCls}`}>{m.badge}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {!result ? (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px' }}>
-          
-          <div style={{ width: '100%', maxWidth: '500px', position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-lg)', background: '#000', aspectRatio: '4/3', marginBottom: '32px' }}>
-            {!permissionError ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-base)' }}>
-                <AlertCircle size={48} color="var(--error)" style={{ marginBottom: '16px' }} />
-                <p style={{ color: 'var(--text-main)', fontWeight: '500' }}>Camera access denied.</p>
-                <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '8px' }}>Please allow camera permissions.</p>
+      <div className="grid-2" style={{ gap: 24, alignItems: 'start' }}>
+        {/* Left: Camera / Upload */}
+        <div>
+          {!result && (
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              {/* Camera View */}
+              <div className="camera-wrapper" style={{ borderRadius: 0 }}>
+                {cameraActive ? (
+                  <>
+                    <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    <div className="scanner-overlay">
+                      <div className="scanner-frame">
+                        <div className="scan-line" />
+                        <div className="scanner-corner tl" />
+                        <div className="scanner-corner tr" />
+                        <div className="scanner-corner bl" />
+                        <div className="scanner-corner br" />
+                      </div>
+                    </div>
+                  </>
+                ) : previewUrl ? (
+                  <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <div
+                    className={`drop-zone${dragOver ? ' drag-over' : ''}`}
+                    style={{ border: 'none', borderRadius: 0, height: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                    onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    <div className="drop-zone-icon">📷</div>
+                    <div className="drop-zone-text">Drop cattle image here</div>
+                    <div className="drop-zone-sub">or click to browse files</div>
+                  </div>
+                )}
+                <canvas ref={canvasRef} style={{ display: 'none' }} />
+                <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleFileChange(e.target.files[0])} />
               </div>
-            )}
-            
-            {/* Viewfinder Corners overlay */}
-            <div style={{ position: 'absolute', top: '15%', left: '15%', right: '15%', bottom: '15%', border: '2px solid rgba(255,255,255,0.2)', borderRadius: '16px' }}></div>
-          </div>
-          
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-          <div style={{ display: 'flex', gap: '16px', width: '100%', maxWidth: '500px' }}>
-            {isAnalyzing ? (
-              <button disabled className="btn btn-primary" style={{ flex: 1, opacity: 0.8, cursor: 'not-allowed', height: '56px' }}>
-                <Loader className="spinner" size={20} style={{ border: 'none' }} />
-                Analyzing with AI...
-              </button>
-            ) : (
-              <button onClick={takePicture} className="btn btn-primary" style={{ flex: 1, height: '56px', fontSize: '16px' }}>
-                <Camera size={20} />
-                Capture & Analyze
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
-          <CheckCircle size={64} color="var(--primary)" style={{ marginBottom: '24px' }} />
-          <h2 style={{ fontSize: '28px', color: 'var(--text-main)', marginBottom: '32px' }}>Analysis Complete</h2>
-          
-          <div style={{ background: 'var(--bg-base)', padding: '24px', borderRadius: 'var(--radius-md)', textAlign: 'left', marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid var(--border-light)', marginBottom: '16px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Detected Condition</span>
-              <span style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '18px' }}>{result.label}</span>
+              {/* Camera Controls */}
+              <div style={{ padding: 16, display: 'flex', gap: 10 }}>
+                {!cameraActive ? (
+                  <>
+                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={startCamera}>
+                      📷 Open Camera
+                    </button>
+                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => fileRef.current?.click()}>
+                      <Upload size={16} /> Upload File
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={takePicture} disabled={isAnalyzing}>
+                      {isAnalyzing ? '⏳ Analyzing...' : <><Zap size={16} /> Capture & Analyze</>}
+                    </button>
+                    <button className="btn btn-ghost btn-icon" onClick={stopCamera}>✕</button>
+                  </>
+                )}
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: 'var(--text-muted)' }}>AI Confidence</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '120px', height: '8px', background: 'var(--border-light)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${(result.confidence * 100).toFixed(0)}%`, height: '100%', background: 'var(--primary)' }}></div>
+          )}
+
+          {result && previewUrl && (
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <img src={previewUrl} alt="Scanned" style={{ width: '100%', height: 200, objectFit: 'cover', display: 'block' }} />
+              <div style={{ padding: 14 }}>
+                <button className="btn btn-secondary w-full" onClick={reset}>
+                  <RotateCcw size={16} /> Scan Another
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Result */}
+        <div>
+          {isAnalyzing && (
+            <div className="card flex-center" style={{ minHeight: 300, flexDirection: 'column', gap: 16 }}>
+              <div className="spinner" />
+              <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+                Analyzing with {MODELS.find(m => m.id === selectedModel)?.label}...
+              </div>
+            </div>
+          )}
+
+          {result && !isAnalyzing && (
+            <div className="diagnosis-card animate-fade-in">
+              {/* Header */}
+              <div className="diagnosis-header" style={{
+                background: result.riskLevel === 'CRITICAL' ? 'var(--risk-critical-bg)' :
+                            result.riskLevel === 'HIGH' ? 'var(--risk-high-bg)' :
+                            result.riskLevel === 'MODERATE' ? 'var(--risk-moderate-bg)' : 'var(--risk-low-bg)'
+              }}>
+                <div>
+                  <div className="diagnosis-disease">{result.label}</div>
+                  <div className="diagnosis-confidence">Diagnosis Result</div>
                 </div>
-                <span style={{ color: 'var(--primary-dark)', fontWeight: '700' }}>{(result.confidence * 100).toFixed(1)}%</span>
+                <RiskBadge level={result.riskLevel} />
+              </div>
+
+              {/* Confidence */}
+              <div className="diagnosis-section">
+                <ConfidenceBar value={result.confidence} />
+              </div>
+
+              {/* Recommendation */}
+              {result.recommendation && (
+                <div className="diagnosis-section">
+                  <div className="diagnosis-section-title">📋 Recommendation</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{result.recommendation}</div>
+                </div>
+              )}
+
+              {/* Symptoms */}
+              {result.symptoms?.length > 0 && (
+                <div className="diagnosis-section">
+                  <div className="diagnosis-section-title">🔍 Observed Symptoms</div>
+                  {result.symptoms.map((s, i) => (
+                    <div key={i} className="symptom-item">
+                      <div className="symptom-dot" />
+                      {s}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Treatment */}
+              {result.treatment && (
+                <div className="diagnosis-section">
+                  <div className="diagnosis-section-title">💊 Treatment Plan</div>
+                  {result.treatment.medicines?.map((m, i) => (
+                    <div key={i} className="medicine-item">
+                      <span>💊</span> {m}
+                    </div>
+                  ))}
+                  {result.treatment.firstAid && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>🩹 First Aid</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{result.treatment.firstAid}</div>
+                    </div>
+                  )}
+                  {result.treatment.prevention && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>🛡️ Prevention</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{result.treatment.prevention}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Source Badge */}
+              {result.source && (
+                <div className="diagnosis-section" style={{ borderTop: '1px solid var(--border)' }}>
+                  <span className="source-badge">🤖 {result.source}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!result && !isAnalyzing && (
+            <div className="card flex-center" style={{ minHeight: 300, flexDirection: 'column', gap: 12 }}>
+              <div style={{ fontSize: 48, opacity: 0.3 }}>🔬</div>
+              <div style={{ fontSize: 14, color: 'var(--text-muted)', textAlign: 'center' }}>
+                Capture or upload a cattle photo to get AI diagnosis
               </div>
             </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-            <button className="btn btn-outline" onClick={() => { setResult(null); startCamera(); }}>
-              Scan Another
-            </button>
-            <button className="btn btn-primary" onClick={() => navigate('/medicine')}>
-              View Treatments
-            </button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

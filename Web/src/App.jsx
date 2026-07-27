@@ -1,5 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import Sidebar from './components/Sidebar';
+import LoadingScreen from './components/LoadingScreen';
+
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -12,15 +15,24 @@ import Certificate from './pages/Certificate';
 import Chat from './pages/Chat';
 import Heatmap from './pages/Heatmap';
 import FarmScore from './pages/FarmScore';
+import Community from './pages/Community';
+import Vets from './pages/Vets';
+import IoT from './pages/IoT';
 
-// Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const { user, isLoading } = useAuth();
-  
-  if (isLoading) return <div className="loading-screen"><div className="spinner"></div></div>;
+  if (isLoading) return <LoadingScreen message="Authenticating..." />;
   if (!user) return <Navigate to="/login" replace />;
-  
-  return children;
+  return (
+    <div className="app-shell">
+      <Sidebar />
+      <main className="main-content">
+        <div className="page-wrapper animate-fade-in">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
 };
 
 function AppRoutes() {
@@ -38,6 +50,9 @@ function AppRoutes() {
       <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path="/heatmap" element={<ProtectedRoute><Heatmap /></ProtectedRoute>} />
       <Route path="/farm-score" element={<ProtectedRoute><FarmScore /></ProtectedRoute>} />
+      <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+      <Route path="/vets" element={<ProtectedRoute><Vets /></ProtectedRoute>} />
+      <Route path="/iot" element={<ProtectedRoute><IoT /></ProtectedRoute>} />
     </Routes>
   );
 }

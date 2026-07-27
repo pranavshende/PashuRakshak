@@ -10,7 +10,14 @@ import { storage } from '../../../context/AuthContext';
 import { runOfflineGeminiDiagnosis } from '../../../utils/offlineAI';
 
 export default function DiagnoseScreen() {
-  const { imageUri } = useLocalSearchParams();
+  const { imageUri, model } = useLocalSearchParams();
+  const modelLabel: Record<string, string> = {
+    gemini: 'Gemini 2.0 Flash Vision',
+    localml: 'Local TFLite ML Model',
+    nano: 'Gemini Nano On-Device',
+    edge: 'Edge Rulebook',
+  };
+  const activeModel = (model as string) || 'gemini';
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
@@ -35,8 +42,9 @@ export default function DiagnoseScreen() {
           name: 'scan.jpg',
           type: 'image/jpeg',
         } as any);
+        formData.append('model', activeModel);
 
-        const response = await fetch(`${API_URL}/predict/analyze`, {
+        const response = await fetch(`${API_URL}/predict/analyze?model=${activeModel}`, {
           method: 'POST',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {},
           body: formData,
@@ -66,7 +74,7 @@ export default function DiagnoseScreen() {
 
   return (
     <View style={styles.container}>
-      <TopHeaderBanner title="AI Disease Diagnosis" subtitle="Google Gemini Multimodal Vision Analysis" />
+      <TopHeaderBanner title="AI Disease Diagnosis" subtitle={`Analyzed by ${modelLabel[activeModel] || 'AI Model'}`} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         

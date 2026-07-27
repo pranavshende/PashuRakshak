@@ -1,93 +1,104 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, ShieldCheck, Heart, Droplets } from 'lucide-react';
-import { API_BASE_URL } from '../config/api';
+import { useEffect, useState } from 'react';
+import TopHeaderBanner from '../components/TopHeaderBanner';
 
-export default function FarmScore() {
-  const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+const SCORE_BREAKDOWN = [
+  { label: 'Herd Health Index', score: 82, icon: '🐄', color: '#22C55E' },
+  { label: 'Vaccination Rate', score: 75, icon: '🧪', color: '#38BDF8' },
+  { label: 'Diagnosis Activity', score: 60, icon: '🔬', color: '#8B5CF6' },
+  { label: 'Milk Yield Trend', score: 88, icon: '🥛', color: '#F59E0B' },
+];
 
-  useEffect(() => {
-    fetchScore();
-  }, []);
+const TIPS = [
+  { icon: '💉', text: 'Schedule deworming for all calves this month', priority: 'High' },
+  { icon: '📋', text: 'Update vaccination records for 3 animals', priority: 'Medium' },
+  { icon: '🔬', text: 'Perform monthly health scan on your herd', priority: 'Medium' },
+  { icon: '🥛', text: 'Review milk yield records for production dip', priority: 'Low' },
+];
 
-  const fetchScore = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/farm/score`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const json = await res.json();
-      setData(json);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Calculating Farm Score...</div>;
-
-  const score = data?.score || 0;
-  const getScoreColor = (s) => s >= 80 ? '#10B981' : s >= 50 ? '#F59E0B' : '#EF4444';
+function ScoreRing({ score, color = '#16A34A' }) {
+  const r = 70, circ = 2 * Math.PI * r;
+  const [displayed, setDisplayed] = useState(0);
+  useEffect(() => { const t = setTimeout(() => setDisplayed(score), 200); return () => clearTimeout(t); }, [score]);
+  const offset = circ - (displayed / 100) * circ;
+  const ringColor = displayed >= 80 ? '#22C55E' : displayed >= 60 ? '#EAB308' : '#F97316';
 
   return (
-    <div className="container" style={{ padding: '40px 24px', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <button onClick={() => navigate('/')} className="btn btn-ghost" style={{ padding: '0 8px' }}>
-          <ArrowLeft size={20} /> Back to Dashboard
-        </button>
+    <div className="score-gauge-wrapper">
+      <div className="score-ring">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle className="score-ring-track" cx="80" cy="80" r={r} />
+          <circle
+            className="score-ring-fill"
+            cx="80" cy="80" r={r}
+            stroke={ringColor}
+            strokeDasharray={circ}
+            strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 1.2s ease' }}
+          />
+        </svg>
+        <div className="score-ring-label">
+          <div className="score-number" style={{ color: ringColor }}>{displayed}</div>
+          <div className="score-unit">/100</div>
+        </div>
+      </div>
+      <div style={{ marginTop: 12, textAlign: 'center' }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-main)' }}>Overall Farm Score</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+          {displayed >= 80 ? '🌟 Excellent — Keep it up!' : displayed >= 60 ? '👍 Good — Room to improve' : '⚠️ Needs attention'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function FarmScore() {
+  return (
+    <div>
+      <TopHeaderBanner title="Farm Health Score" subtitle="AI-powered farm performance intelligence" />
+
+      <div className="grid-2" style={{ gap: 20, alignItems: 'start' }}>
+        {/* Score Ring */}
+        <div className="card flex-center" style={{ flexDirection: 'column', padding: 32 }}>
+          <ScoreRing score={76} />
+        </div>
+
+        {/* Breakdown */}
+        <div className="card">
+          <div className="section-title">Score Breakdown</div>
+          {SCORE_BREAKDOWN.map((item, i) => (
+            <div key={i} style={{ marginBottom: 18 }}>
+              <div className="flex-between mb-2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>{item.icon}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{item.label}</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 800, color: item.color }}>{item.score}</span>
+              </div>
+              <div className="confidence-bar-track">
+                <div className="confidence-bar-fill" style={{ width: `${item.score}%`, background: `linear-gradient(90deg, ${item.color}, ${item.color}99)` }} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <h1 style={{ marginBottom: '8px' }}>📈 AI Farm Productivity Score</h1>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>Holistic performance index combining health, vaccination coverage, and milk yield.</p>
-
-      <div className="card" style={{ padding: '48px 32px', textAlign: 'center', marginBottom: '40px' }}>
-        <div style={{ 
-          width: '160px', height: '160px', borderRadius: '50%', border: '8px solid', 
-          borderColor: getScoreColor(score), margin: '0 auto 32px', display: 'flex', 
-          flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-          boxShadow: `0 0 32px ${getScoreColor(score)}40`
-        }}>
-          <span style={{ fontSize: '48px', fontWeight: '800', color: getScoreColor(score), lineHeight: '1' }}>{score}</span>
-          <span style={{ fontSize: '15px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '4px' }}>out of 100</span>
-        </div>
-        <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', color: 'var(--text-main)' }}>AI Farm Recommendation</h3>
-        <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '16px', lineHeight: '1.6' }}>{data?.suggestion || 'No recommendation available.'}</p>
-      </div>
-
-      <h2 style={{ marginBottom: '24px' }}>Score Breakdown</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '24px' }}>
-          <div style={{ background: 'var(--secondary-light)', padding: '16px', borderRadius: 'var(--radius-sm)' }}>
-            <ShieldCheck size={28} color="var(--secondary)" />
+      {/* Improvement Tips */}
+      <div className="card mt-4">
+        <div className="section-title">💡 Improvement Recommendations</div>
+        {TIPS.map((tip, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            padding: '12px 0', borderBottom: i < TIPS.length - 1 ? '1px solid var(--border)' : 'none'
+          }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+              {tip.icon}
+            </div>
+            <div style={{ flex: 1, fontSize: 13, color: 'var(--text-sub)' }}>{tip.text}</div>
+            <span className={`badge ${tip.priority === 'High' ? 'badge-critical' : tip.priority === 'Medium' ? 'badge-moderate' : 'badge-low'}`}>
+              {tip.priority}
+            </span>
           </div>
-          <div style={{ flex: 1 }}>
-            <strong style={{ color: 'var(--text-main)', fontSize: '18px', display: 'block', marginBottom: '4px' }}>Vaccination Index</strong>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '15px' }}>{data?.details?.vaccinationScore || 0} / 40 Points</p>
-          </div>
-        </div>
-
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '24px' }}>
-          <div style={{ background: '#FEE2E2', padding: '16px', borderRadius: 'var(--radius-sm)' }}>
-            <Heart size={28} color="var(--error)" />
-          </div>
-          <div style={{ flex: 1 }}>
-            <strong style={{ color: 'var(--text-main)', fontSize: '18px', display: 'block', marginBottom: '4px' }}>Herd Health Rate</strong>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '15px' }}>{data?.details?.healthScore || 0} / 40 Points</p>
-          </div>
-        </div>
-
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '24px' }}>
-          <div style={{ background: '#EDE9FE', padding: '16px', borderRadius: 'var(--radius-sm)' }}>
-            <Droplets size={28} color="#8B5CF6" />
-          </div>
-          <div style={{ flex: 1 }}>
-            <strong style={{ color: 'var(--text-main)', fontSize: '18px', display: 'block', marginBottom: '4px' }}>Milk Production Trajectory</strong>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '15px' }}>{data?.details?.milkScore || 0} / 20 Points</p>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );

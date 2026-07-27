@@ -1,157 +1,144 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Tag, Calendar, Weight } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
+import TopHeaderBanner from '../components/TopHeaderBanner';
 import { API_BASE_URL } from '../config/api';
+
+const BREEDS = ['All', 'Gir', 'Sahiwal', 'HF Cross', 'Jersey', 'Murrah Buffalo', 'Other'];
 
 export default function Herd() {
   const navigate = useNavigate();
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ tagId: '', name: '', breed: '', weight: '' });
+  const [search, setSearch] = useState('');
+  const [breed, setBreed] = useState('All');
+  const [form, setForm] = useState({ tagId: '', name: '', breed: '', weight: '', dob: '' });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchAnimals();
-  }, []);
+  useEffect(() => { fetchAnimals(); }, []);
 
   const fetchAnimals = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/animals`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/animals`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.animals) setAnimals(data.animals);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
   const handleAdd = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); setSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('userToken') || localStorage.getItem('token');
       const res = await fetch(`${API_BASE_URL}/animals`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(form)
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (data.animal) {
-        setAnimals([data.animal, ...animals]);
-        setShowModal(false);
-        setForm({ tagId: '', name: '', breed: '', weight: '' });
-      }
-    } catch (e) {
-      console.error(e);
-    }
+      if (res.ok) { await fetchAnimals(); setShowModal(false); setForm({ tagId: '', name: '', breed: '', weight: '', dob: '' }); }
+      else { alert('Failed to add animal.'); }
+    } catch { alert('Network error.'); }
+    finally { setSaving(false); }
   };
 
+  const filtered = animals.filter(a => {
+    const matchSearch = !search || a.name?.toLowerCase().includes(search.toLowerCase()) || a.tagId?.toLowerCase().includes(search.toLowerCase());
+    const matchBreed = breed === 'All' || a.breed === breed;
+    return matchSearch && matchBreed;
+  });
+
+  const EMOJIS = { cow: '🐄', buffalo: '🐃', calf: '🐮', default: '🐄' };
+  const getEmoji = (b = '') => b.toLowerCase().includes('buffalo') ? '🐃' : b.toLowerCase().includes('calf') ? '🐮' : '🐄';
+
   return (
-    <div className="container" style={{ padding: '40px 24px', maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <button onClick={() => navigate('/')} className="btn btn-ghost" style={{ padding: '0 8px' }}>
-          <ArrowLeft size={20} /> Back to Dashboard
+    <div>
+      <TopHeaderBanner title="My Herd" subtitle={`${animals.length} animals registered`}>
+        <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>
+          <Plus size={14} /> Add Animal
         </button>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary">
-          <Plus size={18} /> Register Animal
-        </button>
+      </TopHeaderBanner>
+
+      {/* Filters */}
+      <div className="flex gap-3 mb-4" style={{ flexWrap: 'wrap' }}>
+        <div className="search-bar" style={{ flex: 1, minWidth: 200 }}>
+          <Search size={14} className="search-icon" />
+          <input className="input" placeholder="Search by name or tag ID..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="tab-pills" style={{ margin: 0 }}>
+          {BREEDS.map(b => (
+            <button key={b} className={`tab-pill${breed === b ? ' active' : ''}`} onClick={() => setBreed(b)}>{b}</button>
+          ))}
+        </div>
       </div>
 
-      <h1 style={{ marginBottom: '8px' }}>My Herd (Digital Twins)</h1>
-      <p style={{ marginBottom: '32px' }}>Manage animal profiles, medical history, and health records.</p>
-
       {loading ? (
-        <div style={{ padding: '40px', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-muted)' }}>Loading herd data...</p>
+        <div className="grid-auto">
+          {[1,2,3,4,5,6].map(i => <div key={i} className="skeleton" style={{ height: 180 }} />)}
         </div>
-      ) : animals.length === 0 ? (
-        <div className="card" style={{ padding: '64px 24px', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '18px' }}>No animals registered in your herd yet.</p>
-          <button onClick={() => setShowModal(true)} className="btn btn-primary">
-            <Plus size={18} /> Register First Animal
-          </button>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">🐄</div>
+          <div className="empty-title">No animals found</div>
+          <div className="empty-desc">Add your first animal to get started.</div>
+          <button className="btn btn-primary mt-4" onClick={() => setShowModal(true)}><Plus size={16} /> Add Animal</button>
         </div>
       ) : (
-        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-          {animals.map(animal => (
-            <div 
-              key={animal.id} 
-              onClick={() => navigate(`/animal/${animal.id}`)}
-              className="card"
-              style={{ cursor: 'pointer' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <div style={{ background: 'var(--primary-light)', padding: '6px', borderRadius: '4px' }}>
-                  <Tag size={18} color="var(--primary-dark)" />
+        <div className="grid-auto">
+          {filtered.map(animal => (
+            <div key={animal.id} className="animal-card" onClick={() => navigate(`/animal/${animal.id}`)}>
+              <div className="animal-card-photo">{getEmoji(animal.breed)}</div>
+              <div className="animal-card-body">
+                <div className="flex-between mb-2">
+                  <div className="animal-name">{animal.name || 'Unnamed'}</div>
+                  <span className="badge badge-low">Healthy</span>
                 </div>
-                <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>{animal.tagId}</span>
+                <div className="animal-tag">🏷️ {animal.tagId || 'No Tag'}</div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                  {animal.breed && <span className="badge badge-primary">{animal.breed}</span>}
+                  {animal.weight && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>⚖️ {animal.weight}kg</span>}
+                </div>
               </div>
-              <h2 style={{ fontSize: '20px', color: 'var(--primary-dark)', marginBottom: '8px' }}>
-                {animal.name || 'Unnamed'}
-              </h2>
-              <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '14px' }}>Breed: {animal.breed || 'N/A'}</p>
-              {animal.weight && <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>Weight: {animal.weight} kg</p>}
             </div>
           ))}
         </div>
       )}
 
-      {/* Modal */}
+      {/* Add Animal Modal */}
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(17, 24, 39, 0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
-          <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '32px' }}>
-            <h2 style={{ marginBottom: '24px' }}>Register Cattle</h2>
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+          <div className="modal-box">
+            <div className="modal-title">🐄 Add New Animal</div>
             <form onSubmit={handleAdd}>
               <div className="input-group">
-                <label className="input-label">Tag ID (Required)</label>
-                <input 
-                  type="text" 
-                  className="input-field"
-                  placeholder="e.g. TAG-1029" 
-                  required
-                  value={form.tagId}
-                  onChange={e => setForm({ ...form, tagId: e.target.value })}
-                />
+                <label className="input-label">Tag ID *</label>
+                <input className="input" required value={form.tagId} onChange={e => setForm({...form, tagId: e.target.value})} placeholder="e.g. IND-2024-001" />
               </div>
               <div className="input-group">
-                <label className="input-label">Animal Name</label>
-                <input 
-                  type="text" 
-                  className="input-field"
-                  placeholder="e.g. Gauri" 
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                />
+                <label className="input-label">Name</label>
+                <input className="input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Ganga" />
+              </div>
+              <div className="grid-2">
+                <div className="input-group">
+                  <label className="input-label">Breed</label>
+                  <select className="input" value={form.breed} onChange={e => setForm({...form, breed: e.target.value})}>
+                    <option value="">Select breed</option>
+                    {BREEDS.filter(b => b !== 'All').map(b => <option key={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Weight (kg)</label>
+                  <input className="input" type="number" value={form.weight} onChange={e => setForm({...form, weight: e.target.value})} placeholder="e.g. 350" />
+                </div>
               </div>
               <div className="input-group">
-                <label className="input-label">Breed</label>
-                <input 
-                  type="text" 
-                  className="input-field"
-                  placeholder="e.g. Gir, HF" 
-                  value={form.breed}
-                  onChange={e => setForm({ ...form, breed: e.target.value })}
-                />
+                <label className="input-label">Date of Birth</label>
+                <input className="input" type="date" value={form.dob} onChange={e => setForm({...form, dob: e.target.value})} />
               </div>
-              <div className="input-group" style={{ marginBottom: '32px' }}>
-                <label className="input-label">Weight (kg)</label>
-                <input 
-                  type="number" 
-                  className="input-field"
-                  placeholder="e.g. 450" 
-                  value={form.weight}
-                  onChange={e => setForm({ ...form, weight: e.target.value })}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowModal(false)} className="btn btn-outline">Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Animal</button>
+              <div className="flex gap-3" style={{ marginTop: 8 }}>
+                <button type="button" className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={saving}>{saving ? 'Saving...' : '✓ Add Animal'}</button>
               </div>
             </form>
           </div>
