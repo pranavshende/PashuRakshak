@@ -78,4 +78,106 @@ router.get('/score', requireAuth, async (req, res) => {
   }
 });
 
+// Live News Ticker for Cattle Diseases & Policies
+router.get('/news', async (req, res) => {
+  try {
+    // Dynamically fetch live news from Google News RSS feed for cattle diseases and livestock policy in India
+    let fetchedNews = [];
+    try {
+      const rssUrl = 'https://news.google.com/rss/search?q=cattle+disease+OR+livestock+scheme+India&hl=en-IN&gl=IN&ceid=IN:en';
+      const response = await fetch(rssUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (response.ok) {
+        const xml = await response.text();
+        const itemMatches = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+
+        for (let i = 0; i < Math.min(itemMatches.length, 8); i++) {
+          const match = itemMatches[i];
+          const titleMatch = match.match(/<title>([\s\S]*?)<\/title>/);
+          const linkMatch = match.match(/<link>([\s\S]*?)<\/link>/);
+          const pubDateMatch = match.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+
+          let title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
+          let link = linkMatch ? linkMatch[1].trim() : 'https://dahd.nic.in/';
+          let pubDate = pubDateMatch ? pubDateMatch[1].trim() : '';
+
+          // Clean HTML entities
+          title = title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+
+          if (title) {
+            // Determine category
+            let category = 'DISEASE ALERT';
+            const lowerTitle = title.toLowerCase();
+            if (lowerTitle.includes('scheme') || lowerTitle.includes('loan') || lowerTitle.includes('kisan') || lowerTitle.includes('credit')) {
+              category = 'GOVT SCHEME';
+            } else if (lowerTitle.includes('policy') || lowerTitle.includes('ministry') || lowerTitle.includes('gokul') || lowerTitle.includes('subsidy')) {
+              category = 'POLICY';
+            } else if (lowerTitle.includes('vaccin') || lowerTitle.includes('drive') || lowerTitle.includes('health')) {
+              category = 'HEALTH ADVISORY';
+            }
+
+            fetchedNews.push({
+              id: `live_${i}_${Date.now()}`,
+              title: title,
+              category: category,
+              source: 'Live Web Feed',
+              time: pubDate ? new Date(pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live',
+              url: link,
+              urgent: category === 'DISEASE ALERT'
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Live RSS fetch failed, utilizing database/fallback news.', e);
+    }
+
+    // Fallback if live RSS feed is unreachable
+    if (fetchedNews.length === 0) {
+      fetchedNews = [
+        {
+          id: '1',
+          title: 'NADCP Free Vaccination Drive: FMD & Brucellosis shots active in local districts',
+          category: 'DISEASE ALERT',
+          source: 'DAHD Ministry',
+          time: '1 hour ago',
+          url: 'https://dahd.nic.in/',
+          urgent: true
+        },
+        {
+          id: '2',
+          title: 'Lumpy Skin Disease Prevention Guidelines issued for dairy farmers',
+          category: 'HEALTH ADVISORY',
+          source: 'Livestock Health Board',
+          time: '3 hours ago',
+          url: 'https://dahd.nic.in/',
+          urgent: true
+        },
+        {
+          id: '3',
+          title: 'Pashu Kisan Credit Card: Up to ₹1.6 Lakh collateral-free loan at 4% interest',
+          category: 'GOVT SCHEME',
+          source: 'NABARD',
+          time: '5 hours ago',
+          url: 'https://nabard.org/',
+          urgent: false
+        },
+        {
+          id: '4',
+          title: 'Rashtriya Gokul Mission: Subsidies available for high-yield breed development',
+          category: 'POLICY',
+          source: 'Ministry of Animal Husbandry',
+          time: '1 day ago',
+          url: 'https://dahd.nic.in/',
+          urgent: false
+        }
+      ];
+    }
+
+    res.json({ news: fetchedNews });
+  } catch (error) {
+    console.error('Farm News API Error:', error);
+    res.status(500).json({ error: 'Failed to fetch live livestock news.' });
+  }
+});
+
 module.exports = router;

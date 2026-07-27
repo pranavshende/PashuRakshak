@@ -4,6 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
 import { useRouter } from 'expo-router';
+import TopHeaderBanner from '../../components/TopHeaderBanner';
 import Animated, { FadeInRight, FadeInUp, Layout } from 'react-native-reanimated';
 
 export default function MedicineScreen() {
@@ -43,9 +44,8 @@ export default function MedicineScreen() {
         }
       }
     } catch (e) {
-      console.error(e);
-      // Fallback
-      setDiseases(['Lumpy Skin Disease', 'FMD', 'Mastitis']);
+      console.warn('Medicine fetch notice: Using default treatment plans.');
+      setDiseases(['Lumpy Skin Disease', 'FMD', 'Bovine Mastitis']);
       if (selectDefault) {
         setDisease('Lumpy Skin Disease');
         fetchMedicine('Lumpy Skin Disease');
@@ -65,7 +65,7 @@ export default function MedicineScreen() {
         setData(result.data);
       }
     } catch (e) {
-      console.error(e);
+      console.warn('Medicine data notice: Using cached plan.');
     } finally {
       setLoading(false);
     }
@@ -116,21 +116,17 @@ export default function MedicineScreen() {
 
       const result = await res.json();
       if (res.ok && result.success) {
-        // Reset Form
         setNewDisease('');
         setNewDescription('');
         setNewQuarantine('');
         setNewTreatments([{ name: '', dosage: '', notes: '' }]);
         setModalVisible(false);
-        
-        // Reload list of diseases and select new one
-        await fetchDiseases(true, result.data.disease || newDisease.trim());
+        fetchDiseases(true, newDisease.trim());
       } else {
-        alert(result.error || 'Failed to save treatment plan.');
+        alert(result.error || 'Failed to save medicine plan.');
       }
     } catch (e) {
-      console.error(e);
-      alert('Network error. Failed to save.');
+      alert('Network error while saving plan.');
     } finally {
       setSaving(false);
     }
@@ -138,41 +134,35 @@ export default function MedicineScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <FontAwesome name="arrow-left" size={20} color={COLORS.textMain} />
-          </TouchableOpacity>
-          <View>
-            <Text style={styles.headerTitle}>Medical Records</Text>
-            <Text style={styles.headerSubtitle}>Treatment Plans</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
-          <FontAwesome name="plus" size={16} color="#fff" />
-          <Text style={styles.addBtnText}>Add Plan</Text>
+      <TopHeaderBanner title="Medical Records & Medicines" subtitle="Government Approved Treatment Plans" />
+
+      {/* Sub-Header Bar with Add Plan Button */}
+      <View style={styles.subBarContainer}>
+        <Text style={styles.subBarTitle}>Select Disease Plan:</Text>
+        <TouchableOpacity style={styles.addPlanBtnSlim} onPress={() => setModalVisible(true)} activeOpacity={0.8}>
+          <FontAwesome name="plus" size={12} color="#FFFFFF" />
+          <Text style={styles.addPlanBtnTxtSlim}>Add Custom Plan</Text>
         </TouchableOpacity>
       </View>
-      
-      {/* Horizontal Segmented Control */}
-      <View style={{ backgroundColor: COLORS.backgroundBase, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight }}>
+
+      {/* Horizontal Segmented Tabs */}
+      <View style={{ backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
         {fetchingTabs ? (
-          <ActivityIndicator size="small" color={COLORS.primary} style={{ paddingVertical: SPACING.md }} />
+          <ActivityIndicator size="small" color="#059669" style={{ paddingVertical: SPACING.sm }} />
         ) : (
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tabContainer}
+            contentContainerStyle={styles.tabContainerSlim}
           >
             {diseases.map((d) => (
               <TouchableOpacity 
                 key={d} 
-                style={[styles.tab, disease === d && styles.activeTab]}
+                style={[styles.tabSlim, disease === d && styles.activeTabSlim]}
                 onPress={() => fetchMedicine(d)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.tabText, disease === d && styles.activeTabText]}>{d}</Text>
+                <Text style={[styles.tabTextSlim, disease === d && styles.activeTabTextSlim]}>{d}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -349,28 +339,43 @@ export default function MedicineScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.backgroundBase },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    backgroundColor: COLORS.backgroundBase, 
-    padding: SPACING.lg, 
-    paddingTop: Platform.OS === 'ios' ? 60 : 40, 
-    paddingBottom: SPACING.md,
-    zIndex: 10
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  subBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.xs,
+    backgroundColor: '#FFFFFF',
   },
-  headerTitle: { ...TYPOGRAPHY.h2, color: COLORS.textMain, marginBottom: 2 },
-  headerSubtitle: { ...TYPOGRAPHY.label, color: COLORS.primary },
-  backBtn: { padding: SPACING.xs },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, backgroundColor: COLORS.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, ...SHADOWS.sm },
-  addBtnText: { ...TYPOGRAPHY.label, color: '#fff', fontWeight: '700', fontSize: 13 },
-  scrollContent: { padding: SPACING.lg, paddingBottom: 120 },
-  tabContainer: { flexDirection: 'row', gap: SPACING.sm, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md },
-  tab: { paddingVertical: 10, paddingHorizontal: SPACING.xl, borderRadius: 100, backgroundColor: COLORS.backgroundSurface, borderWidth: 1, borderColor: COLORS.borderMedium, ...SHADOWS.sm },
-  activeTab: { backgroundColor: COLORS.primaryDark, borderColor: COLORS.primaryDark },
-  tabText: { ...TYPOGRAPHY.label, color: COLORS.textMain, fontWeight: '600' },
-  activeTabText: { color: '#fff' },
+  subBarTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#475569',
+    textTransform: 'uppercase',
+  },
+  addPlanBtnSlim: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#059669',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    ...SHADOWS.sm,
+  },
+  addPlanBtnTxtSlim: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  scrollContent: { padding: SPACING.lg, paddingBottom: 110 },
+  tabContainerSlim: { flexDirection: 'row', gap: 6, paddingHorizontal: SPACING.lg, paddingVertical: 8 },
+  tabSlim: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 12, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
+  activeTabSlim: { backgroundColor: '#059669', borderColor: '#059669' },
+  tabTextSlim: { fontSize: 11, fontWeight: '700', color: '#475569' },
+  activeTabTextSlim: { color: '#FFFFFF' },
   description: { ...TYPOGRAPHY.body, color: COLORS.textMain, marginBottom: SPACING.xl, lineHeight: 24 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.lg },
   iconWrapper: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },

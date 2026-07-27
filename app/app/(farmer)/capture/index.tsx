@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, ActivityIndicator, Platform, Dimensions } from 'react-native';
-import { Text, View } from '@/components/Themed';
+import { StyleSheet, TouchableOpacity, ActivityIndicator, Platform, Dimensions, View, Text } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -173,7 +172,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     justifyContent: 'space-between',
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: SPACING.xxl,
+    paddingBottom: 110,
   },
   topBar: {
     flexDirection: 'row',
@@ -209,7 +208,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   scanLine: { width: '100%', height: 2, backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 10, elevation: 5 },
-  corner: { position: 'absolute', width: 30, height: 30, borderColor: COLORS.primary, borderWidth: 0 },
+  corner: { position: 'absolute', width: 30, height: 30, borderColor: COLORS.primary, borderWidth: 0, backgroundColor: 'transparent' },
   cornerTL: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 10 },
   cornerTR: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 10 },
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 10 },

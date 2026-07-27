@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Keyboa
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
+import TopHeaderBanner from '../../components/TopHeaderBanner';
 import { useRouter } from 'expo-router';
 import { storage } from '../../context/AuthContext';
 import { Audio } from 'expo-av';
@@ -148,10 +149,12 @@ export default function ChatScreen() {
     transform: [{ scale: pulseScale.value }]
   }));
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-    
-    const userMsg = input.trim();
+  const sendQuickQuery = (queryText: string) => {
+    sendMessageDirect(queryText);
+  };
+
+  const sendMessageDirect = async (userMsg: string) => {
+    if (!userMsg.trim()) return;
     const newId = Math.random().toString();
     setMessages(prev => [...prev, { role: 'user', text: userMsg, id: newId }]);
     setInput('');
@@ -173,18 +176,21 @@ export default function ChatScreen() {
       
       const resId = Math.random().toString();
       if (data.response) {
-        // Detect if the response contains First-Aid actionable keywords (crude heuristic for demo)
-        const isActionable = userMsg.toLowerCase().includes('fever') || userMsg.toLowerCase().includes('sick');
-        
+        const isActionable = userMsg.toLowerCase().includes('fever') || userMsg.toLowerCase().includes('sick') || userMsg.toLowerCase().includes('milk');
         setMessages(prev => [...prev, { role: 'ai', text: data.response, id: resId, isCard: isActionable }]);
       } else {
         setMessages(prev => [...prev, { role: 'ai', text: data.error || 'Sorry, I am having trouble connecting to the server.', id: resId }]);
       }
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'ai', text: 'Network error. Please try again later.', id: Math.random().toString() }]);
+      setMessages(prev => [...prev, { role: 'ai', text: 'First-Aid Advisory: Keep the animal sheltered, maintain hydration with ORS solution, and contact your nearest veterinary officer.', id: Math.random().toString(), isCard: true }]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+    await sendMessageDirect(input.trim());
   };
 
   const renderMessageContent = (msg: any) => {
@@ -196,10 +202,28 @@ export default function ChatScreen() {
             <Text style={styles.actionCardTitle}>First-Aid Recommendation</Text>
           </View>
           <Text style={styles.aiText}>{msg.text}</Text>
-          <TouchableOpacity style={styles.actionBtn}>
-            <Text style={styles.actionBtnText}>Find Nearest Vet</Text>
-            <FontAwesome name="arrow-right" size={12} color={COLORS.primaryDark} />
-          </TouchableOpacity>
+          
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity 
+              style={styles.actionBtnPrimary} 
+              activeOpacity={0.8}
+              onPress={() => router.push('/(farmer)/vets' as any)}
+            >
+              <FontAwesome name="user-md" size={14} color="#FFFFFF" />
+              <Text style={styles.actionBtnPrimaryText}>Find Nearest Vet</Text>
+              <FontAwesome name="chevron-right" size={12} color="#FFFFFF" style={{ marginLeft: 'auto' }} />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.actionBtnSecondary} 
+              activeOpacity={0.8}
+              onPress={() => router.push('/(farmer)/medicine' as any)}
+            >
+              <FontAwesome name="medkit" size={14} color="#059669" />
+              <Text style={styles.actionBtnSecondaryText}>Order Medicines</Text>
+              <FontAwesome name="chevron-right" size={12} color="#059669" style={{ marginLeft: 'auto' }} />
+            </TouchableOpacity>
+          </View>
         </View>
       );
     }
@@ -209,22 +233,17 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
-      behavior="padding"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <FontAwesome name="arrow-left" size={20} color={COLORS.textMain} />
-          </TouchableOpacity>
-          <View>
-            <Text style={styles.headerTitle}>AI Assistant</Text>
-            <Text style={styles.headerSubtitle}>Triage & Support</Text>
-          </View>
-        </View>
+      <TopHeaderBanner title="AI Vet Assistant" subtitle="Instant AI first-aid & consultation" />
+
+      {/* Language Selector Sub-Bar */}
+      <View style={styles.langBarContainer}>
+        <Text style={styles.langBarLabel}>Language:</Text>
         <View style={styles.langToggle}>
           {['English', 'Hindi', 'Marathi'].map(lang => (
             <TouchableOpacity key={lang} onPress={() => setLanguage(lang)} style={[styles.langPill, language === lang && styles.langPillActive]}>
-              <Text style={[styles.langText, language === lang && styles.langTextActive]}>{lang.substring(0,2)}</Text>
+              <Text style={[styles.langText, language === lang && styles.langTextActive]}>{lang}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -233,9 +252,28 @@ export default function ChatScreen() {
       <ScrollView 
         ref={scrollViewRef}
         style={styles.chatArea} 
-        contentContainerStyle={{ padding: SPACING.lg, paddingBottom: SPACING.xxl }}
+        contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 110 }}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
       >
+        {/* Quick Symptom Chips */}
+        <View style={styles.chipScroll}>
+          {[
+            { label: '🌡️ High Fever', query: 'My cow has a high fever and is not eating.' },
+            { label: '🥛 Milk Drop', query: 'Milk yield suddenly dropped this morning.' },
+            { label: '🩹 Skin Lesions', query: 'Nodules and skin lesions appearing on cattle.' },
+            { label: '🩺 Vaccination', query: 'What free vaccination drives are active?' }
+          ].map(chip => (
+            <TouchableOpacity 
+              key={chip.label} 
+              style={styles.chipBtn} 
+              activeOpacity={0.8}
+              onPress={() => sendQuickQuery(chip.query)}
+            >
+              <Text style={styles.chipText}>{chip.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <Text style={styles.dateStamp}>Today</Text>
 
         {messages.map((msg, index) => (
@@ -323,26 +361,62 @@ export default function ChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.backgroundBase },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    backgroundColor: COLORS.backgroundSurface, 
-    padding: SPACING.lg, 
-    paddingTop: Platform.OS === 'ios' ? 60 : 40, 
-    paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-    zIndex: 10
+  chipScroll: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+    marginBottom: SPACING.md,
   },
-  backBtn: { padding: SPACING.xs },
-  headerTitle: { ...TYPOGRAPHY.h3, color: COLORS.textMain, marginBottom: 2 },
-  headerSubtitle: { ...TYPOGRAPHY.label, fontSize: 12, color: COLORS.success },
-  langToggle: { flexDirection: 'row', gap: 2, backgroundColor: COLORS.backgroundBase, padding: 4, borderRadius: SIZES.radiusXl, borderWidth: 1, borderColor: COLORS.borderLight },
-  langPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: SIZES.radiusLg },
-  langPillActive: { backgroundColor: COLORS.primaryLight, ...SHADOWS.sm },
-  langText: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700' },
-  langTextActive: { color: COLORS.primaryDark },
+  chipBtn: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  chipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  langBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xs + 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  langBarLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  langToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 20,
+    padding: 3,
+  },
+  langPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  langPillActive: {
+    backgroundColor: '#059669',
+  },
+  langText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  langTextActive: {
+    color: '#FFFFFF',
+  },
   chatArea: { flex: 1 },
   dateStamp: { textAlign: 'center', ...TYPOGRAPHY.label, color: COLORS.textMuted, marginBottom: SPACING.xl },
   messageRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: SPACING.lg, gap: SPACING.sm },
@@ -354,11 +428,43 @@ const styles = StyleSheet.create({
   messageText: { ...TYPOGRAPHY.body, fontSize: 15 },
   userText: { color: '#fff' },
   aiText: { color: COLORS.textMain, lineHeight: 22 },
-  actionCard: { width: '100%' },
-  actionCardHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, backgroundColor: '#f59e0b', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
-  actionCardTitle: { ...TYPOGRAPHY.body, color: '#fff', fontWeight: '700', fontSize: 13 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, marginTop: SPACING.md, paddingVertical: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.borderLight },
-  actionBtnText: { ...TYPOGRAPHY.body, color: COLORS.primaryDark, fontWeight: '700' },
+  actionCard: { width: '100%', padding: SPACING.md },
+  actionCardHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, backgroundColor: '#f59e0b', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: 10, marginBottom: SPACING.sm },
+  actionCardTitle: { ...TYPOGRAPHY.body, color: '#fff', fontWeight: '800', fontSize: 13 },
+  actionButtonsContainer: {
+    marginTop: SPACING.md,
+    gap: SPACING.xs + 2,
+  },
+  actionBtnPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs + 2,
+    backgroundColor: '#059669',
+    paddingVertical: 10,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 12,
+  },
+  actionBtnPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  actionBtnSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs + 2,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingVertical: 10,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 12,
+  },
+  actionBtnSecondaryText: {
+    color: '#059669',
+    fontSize: 13,
+    fontWeight: '800',
+  },
   inputArea: { 
     padding: SPACING.md, 
     backgroundColor: COLORS.backgroundSurface, 

@@ -8,8 +8,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textMuted,
+        tabBarActiveTintColor: '#059669',
+        tabBarInactiveTintColor: '#64748B',
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
@@ -17,57 +17,66 @@ export default function TabLayout() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.98)',
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-          height: Platform.OS === 'ios' ? 96 : 80,
-          borderTopWidth: 0,
-          paddingBottom: Platform.OS === 'ios' ? 32 : 20,
+          backgroundColor: '#FFFFFF',
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          height: Platform.OS === 'ios' ? 86 : 68,
+          borderTopWidth: 1,
+          borderTopColor: '#F1F5F9',
+          paddingBottom: Platform.OS === 'ios' ? 26 : 10,
           paddingTop: 8,
-          elevation: 10,
+          elevation: 12,
           shadowColor: '#0F172A',
-          shadowOffset: { width: 0, height: -10 },
-          shadowOpacity: 0.05,
-          shadowRadius: 20,
+          shadowOffset: { width: 0, height: -6 },
+          shadowOpacity: 0.06,
+          shadowRadius: 16,
         },
         tabBarItemStyle: {
-          paddingVertical: 4,
+          paddingVertical: 2,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+          fontSize: 11,
+          fontWeight: '700',
         }
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <FontAwesome name="home" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
           title: 'AI Vet',
-          tabBarIcon: ({ color }) => <FontAwesome name="comments" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="comments" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="community/index"
         options={{
           title: 'Alerts',
-          tabBarIcon: ({ color }) => <FontAwesome name="map" size={26} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="map" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <FontAwesome name="cog" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="cog" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="two"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <FontAwesome name="user" size={22} color={color} />,
         }}
       />
       
-      {/* Hide the rest of the screens from the bottom tab bar */}
+      {/* Hide non-tab screens from the bottom navigation bar */}
+      <Tabs.Screen name="diagnose/index" options={{ href: null }} />
       <Tabs.Screen name="capture/index" options={{ href: null }} />
       <Tabs.Screen name="iot/index" options={{ href: null }} />
       <Tabs.Screen name="vets/index" options={{ href: null }} />
@@ -77,7 +86,6 @@ export default function TabLayout() {
       <Tabs.Screen name="animals/index" options={{ href: null }} />
       <Tabs.Screen name="animals/[id]" options={{ href: null }} />
       <Tabs.Screen name="animals/certificate" options={{ href: null }} />
-      <Tabs.Screen name="two" options={{ href: null }} />
     </Tabs>
   );
 }
