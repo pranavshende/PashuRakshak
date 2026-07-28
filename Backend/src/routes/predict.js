@@ -228,13 +228,9 @@ router.post('/analyze', requireAuth, upload.single('file'), async (req, res) => 
 
     if (modelChoice === 'edge') {
       prediction = await tryLocalML(req.file.buffer, req.file.originalname || 'image.jpg');
-      if (!prediction) {
-        prediction = DISEASE_KB['LSD'];
-        prediction = { isLivestock: true, ...DISEASE_KB['LSD'], confidence: 0.85, source: 'Edge Rulebook' };
-      } else {
+      if (prediction) {
         prediction.source = 'Edge Rulebook / Local ML';
       }
-
     } else if (modelChoice === 'nano' || modelChoice === 'localml') {
       prediction = await tryLocalML(req.file.buffer, req.file.originalname || 'image.jpg');
       if (prediction) {
@@ -254,13 +250,8 @@ router.post('/analyze', requireAuth, upload.single('file'), async (req, res) => 
 
     // Final safety net — if local ML also returned nothing
     if (!prediction) {
-      console.warn('[Predict] All models failed — using edge rulebook fallback.');
-      prediction = {
-        isLivestock: true,
-        ...DISEASE_KB['LSD'],
-        confidence: 0.72,
-        source: 'Edge Rulebook (Fallback)'
-      };
+      console.warn('[Predict] All models failed.');
+      return res.status(503).json({ error: 'AI models cannot be reached. Please check your connection and ensure the ML service is running.' });
     }
 
     // Save to DB
