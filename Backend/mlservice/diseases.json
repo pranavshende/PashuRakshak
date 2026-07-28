@@ -1,0 +1,126 @@
+{
+  "FMD": {
+    "full_name": "Foot-and-Mouth Disease",
+    "severity": "CRITICAL",
+    "contagious": true,
+    "symptoms": [
+      "Blisters/vesicles on hooves, mouth and tongue",
+      "Excessive salivation and drooling",
+      "Lameness and reluctance to walk",
+      "High fever above 40°C (104°F)",
+      "Sudden drop in milk production"
+    ],
+    "immediate_actions": [
+      "ISOLATE the animal from the herd immediately",
+      "Do NOT move the animal off the farm",
+      "Report to local veterinary/animal husbandry authority (legally required)",
+      "Restrict visitor access to the farm"
+    ],
+    "treatment": {
+      "description": "No specific cure exists. Supportive therapy: clean and disinfect lesions, provide soft feed and clean water. Antibiotics for secondary infections only.",
+      "medicines": [
+        {"name": "Meloxicam", "dosage": "0.5 mg/kg IV/IM", "use": "Pain relief and fever reduction", "prescription": true},
+        {"name": "Oxytetracycline", "dosage": "20 mg/kg", "use": "Prevent secondary bacterial infection", "prescription": true},
+        {"name": "Potassium permanganate solution", "dosage": "0.1% solution", "use": "Disinfect hoof and mouth lesions", "prescription": false},
+        {"name": "Zinc Sulphate foot bath", "dosage": "10% solution", "use": "Daily hoof treatment", "prescription": false}
+      ],
+      "first_aid": "Wash lesions with 0.2% citric acid or potassium permanganate. Apply glycerine + iodine to mouth lesions. Provide soft feed and clean water."
+    },
+    "prevention": "Vaccinate entire herd with polyvalent FMD vaccine every 6 months. Disinfect shed with 2% sodium hydroxide. Strict biosecurity — no sharing of equipment. Restrict visitor access.",
+    "recovery_days": "14-21 days",
+    "emergency": true,
+    "vet_required": true
+  },
+  "Healthy_Cow": {
+    "full_name": "Healthy Animal",
+    "severity": "NONE",
+    "contagious": false,
+    "symptoms": [
+      "No visible signs of disease detected",
+      "Normal skin and coat appearance",
+      "Normal body posture and movement"
+    ],
+    "immediate_actions": [
+      "No action required",
+      "Continue routine health monitoring"
+    ],
+    "treatment": {
+      "description": "Continue regular feeding, vaccination schedule, and routine health checks.",
+      "medicines": [
+        {"name": "Albendazole", "dosage": "7.5 mg/kg", "use": "Routine dewormer every 3 months", "prescription": false},
+        {"name": "Vitamin AD3E injection", "dosage": "As per weight", "use": "Seasonal supplementation", "prescription": false}
+      ],
+      "first_aid": "No immediate treatment required. Continue routine preventive care."
+    },
+    "prevention": "Maintain vaccination schedule. Regular deworming every 3 months. Clean water supply and balanced TMR diet. Regular health checkups every 6 months.",
+    "recovery_days": "N/A",
+    "emergency": false,
+    "vet_required": false
+  },
+  "LSD": {
+    "full_name": "Lumpy Skin Disease",
+    "severity": "HIGH",
+    "contagious": true,
+    "symptoms": [
+      "Multiple raised firm nodular skin lumps (2-5 cm diameter)",
+      "High fever above 41°C (106°F)",
+      "Swollen superficial lymph nodes",
+      "Reduced milk production",
+      "Nasal and eye discharge",
+      "Skin lesions may ulcerate and become necrotic"
+    ],
+    "immediate_actions": [
+      "Isolate the affected animal immediately",
+      "Vaccinate the remaining herd within 48 hours",
+      "Control insects (flies, mosquitoes, ticks) — they spread the virus",
+      "Notify local veterinary authority"
+    ],
+    "treatment": {
+      "description": "Supportive care. Treat secondary skin infections. Anti-inflammatory for fever. Keep animal in clean, dry, shaded area.",
+      "medicines": [
+        {"name": "Ivermectin injection", "dosage": "1 ml/50 kg body weight", "use": "Antiparasitic and insect control", "prescription": true},
+        {"name": "Meloxicam", "dosage": "0.5 mg/kg", "use": "Anti-inflammatory and fever reduction", "prescription": false},
+        {"name": "Oxytetracycline", "dosage": "20 mg/kg", "use": "Secondary bacterial infection prevention", "prescription": true},
+        {"name": "Neomycin ointment / Betadine", "dosage": "Topical", "use": "Topical treatment of skin nodules", "prescription": false}
+      ],
+      "first_aid": "Clean nodules with warm saline water. Apply neem + turmeric paste or Betadine. Maintain dry shaded bedding."
+    },
+    "prevention": "Annual LSD vaccination with live attenuated vaccine. Insect vector control with permethrin sprays. Quarantine new animals for 28 days. Disinfect shed daily during outbreaks.",
+    "recovery_days": "28-42 days",
+    "emergency": true,
+    "vet_required": true
+  },
+  "Mastitis": {
+    "full_name": "Bovine Mastitis (Udder Infection)",
+    "severity": "HIGH",
+    "contagious": false,
+    "symptoms": [
+      "Hot, swollen, red or hard udder",
+      "Pain when touching the udder",
+      "Abnormal milk: watery, clots, blood-tinged",
+      "Reduced or stopped milk yield",
+      "Mild fever in acute cases",
+      "Cow reluctant to be milked"
+    ],
+    "immediate_actions": [
+      "Milk the affected quarter more frequently (3-4x per day)",
+      "Do NOT consume or sell the affected milk",
+      "Collect milk sample for bacterial culture if possible",
+      "Consult vet for antibiotic selection"
+    ],
+    "treatment": {
+      "description": "Intramammary antibiotic infusion. Anti-inflammatory treatment. Strip affected quarter frequently.",
+      "medicines": [
+        {"name": "Amoxicillin/Cloxacillin intramammary tube", "dosage": "One tube per quarter, twice daily for 3 days", "use": "Direct udder antibiotic treatment", "prescription": true},
+        {"name": "Ceftiofur", "dosage": "As prescribed", "use": "Systemic antibiotic for severe cases", "prescription": true},
+        {"name": "Oxytocin", "dosage": "10-20 IU IV/IM", "use": "Before milking to aid let-down", "prescription": true},
+        {"name": "Meloxicam / Flunixin", "dosage": "2.2 mg/kg", "use": "Reduce udder inflammation and pain", "prescription": false}
+      ],
+      "first_aid": "Wash udder with warm water. Fore-strip and discard infected milk. Post-dip teats with 0.5% iodine after milking."
+    },
+    "prevention": "Post-milking teat dipping with iodine-based solution. Dry cow intramammary therapy. Regular milking hygiene. Keep milking equipment clean and calibrated.",
+    "recovery_days": "7-14 days",
+    "emergency": false,
+    "vet_required": true
+  }
+}
