@@ -210,7 +210,7 @@ export default function DashboardScreen() {
           <TouchableOpacity 
             style={styles.alertBanner} 
             activeOpacity={0.9}
-            onPress={() => router.push('/(farmer)/community' as any)}
+            onPress={() => router.push('/community')}
           >
             <View style={styles.alertIconBadge}>
               <FontAwesome name="exclamation-triangle" size={16} color="#fff" />

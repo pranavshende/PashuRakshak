@@ -7,7 +7,7 @@ import {
 
 const NAV = [
   { label: 'Core', items: [
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/capture', icon: Camera, label: 'Scan Cattle' },
   ]},
   { label: 'Herd Management', items: [
