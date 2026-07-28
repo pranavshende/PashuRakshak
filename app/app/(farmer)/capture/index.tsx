@@ -38,23 +38,7 @@ const AI_MODELS: AIModel[] = [
     color: '#059669',
     badge: 'Local',
     desc: 'TensorFlow Lite model running on your local server'
-  },
-  {
-    id: 'nano',
-    label: 'Gemini Nano',
-    icon: 'mobile',
-    color: '#7C3AED',
-    badge: 'On-Device',
-    desc: 'On-device AI running directly on Android (Pixel 8+ / S24+)'
-  },
-  {
-    id: 'edge',
-    label: 'Edge Rulebook',
-    icon: 'book',
-    color: '#D97706',
-    badge: 'Offline',
-    desc: 'Offline veterinary rule-based diagnostic engine'
-  },
+  }
 ];
 
 export default function CaptureScreen() {

@@ -12,10 +12,10 @@ import { runOfflineGeminiDiagnosis } from '../../../utils/offlineAI';
 export default function DiagnoseScreen() {
   const { imageUri, model } = useLocalSearchParams();
   const modelLabel: Record<string, string> = {
-    gemini: 'Gemini 2.0 Flash Vision',
-    localml: 'Local TFLite ML Model',
-    nano: 'Gemini Nano On-Device',
-    edge: 'Edge Rulebook',
+    gemini: 'Google Gemini Vision (Cloud)',
+    localml: 'Local ML (CattleCare v1)',
+    nano: 'Gemini Nano (On-Device)',
+    edge: 'Edge Rulebook Diagnostics',
   };
   const activeModel = (model as string) || 'gemini';
   const router = useRouter();
@@ -25,6 +25,10 @@ export default function DiagnoseScreen() {
   const [result, setResult] = useState<any>(null);
 
   useEffect(() => {
+    setResult(null);
+    setLoading(true);
+    setErrorMsg('');
+
     if (!imageUri) {
       setErrorMsg('No image provided.');
       setLoading(false);
@@ -85,7 +89,7 @@ export default function DiagnoseScreen() {
             {loading && (
               <View style={styles.loadingOverlay}>
                 <ActivityIndicator size="large" color="#059669" />
-                <Text style={styles.loadingText}>Analyzing Image with Gemini AI...</Text>
+                <Text style={styles.loadingText}>Analyzing with {modelLabel[activeModel] || 'AI Model'}...</Text>
               </View>
             )}
           </Animated.View>
@@ -146,7 +150,7 @@ export default function DiagnoseScreen() {
                     </Text>
                     <View style={styles.modelSourceBadge}>
                       <FontAwesome name="flash" size={10} color="#059669" />
-                      <Text style={styles.modelSourceText}>{result.source || 'Google Gemini 1.5 Flash Vision'}</Text>
+                      <Text style={styles.modelSourceText}>{result.source || 'Google Gemini Vision'}</Text>
                     </View>
                   </View>
                 </View>

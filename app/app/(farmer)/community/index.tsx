@@ -12,16 +12,17 @@ import * as Location from 'expo-location';
 let MapView: any = null;
 let Marker: any = null;
 let Circle: any = null;
-if (Platform.OS !== 'web') {
-  try {
-    const MapModule = require('react-native-maps');
-    MapView = MapModule.default;
-    Marker = MapModule.Marker;
-    Circle = MapModule.Circle;
-  } catch (error) {
-    console.warn("react-native-maps could not be loaded in this environment. Falling back to mockup map.", error);
-  }
-}
+// Temporarily disabled react-native-maps on all platforms to prevent crash without API Key in production
+// if (Platform.OS !== 'web') {
+//   try {
+//     const MapModule = require('react-native-maps');
+//     MapView = MapModule.default;
+//     Marker = MapModule.Marker;
+//     Circle = MapModule.Circle;
+//   } catch (error) {
+//     console.warn("react-native-maps could not be loaded in this environment. Falling back to mockup map.", error);
+//   }
+// }
 
 const { width } = Dimensions.get('window');
 
