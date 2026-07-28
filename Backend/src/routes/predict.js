@@ -106,7 +106,7 @@ async function tryLocalML(fileBuffer, filename) {
 
     const response = await axios.post(mlServiceUrl, form, {
       headers: form.getHeaders(),
-      timeout: 10000
+      timeout: 30000
     });
 
     const d = response.data;
@@ -171,7 +171,7 @@ If IS livestock/lesion, diagnose and return ONLY this JSON:
 IMPORTANT: Output ONLY raw valid JSON. No markdown. No explanation.`;
 
   // Try multiple models in order (each has separate quota)
-  const models = ['gemini-1.5-flash-8b', 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-002', 'gemini-1.5-pro-002'];
 
   for (const modelName of models) {
     try {
