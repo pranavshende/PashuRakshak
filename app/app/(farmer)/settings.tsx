@@ -113,6 +113,7 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>Support & Assistance</Text>
           <View style={styles.slimCard}>
             {renderSlimRow('question-circle', 'Help Center & AI Vet', '#059669', false, () => router.push('/(farmer)/chat' as any))}
+            {renderSlimRow('terminal', 'API & Network Debugger', '#0284C7', false, () => router.push('/(farmer)/debugger' as any))}
             {renderSlimRow('shield', 'Privacy Policy & DAHD Portal', '#64748B', false, () => Linking.openURL('https://dahd.nic.in/').catch(() => {}), undefined, true)}
           </View>
         </Animated.View>
