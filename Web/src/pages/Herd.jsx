@@ -60,7 +60,8 @@ export default function Herd() {
         </button>
       </TopHeaderBanner>
 
-      {/* Filters */}
+      <div className="page-content-container">
+        {/* Filters */}
       <div className="flex gap-3 mb-4" style={{ flexWrap: 'wrap' }}>
         <div className="search-bar" style={{ flex: 1, minWidth: 200 }}>
           <Search size={14} className="search-icon" />
@@ -104,6 +105,7 @@ export default function Herd() {
           ))}
         </div>
       )}
+      </div>
 
       {/* Add Animal Modal */}
       {showModal && (

@@ -56,11 +56,35 @@ PashuRakshak is an offline-first Edge AI system that detects livestock diseases 
 - Zod input validation across all endpoints.
 - Sentry crash/error monitoring for mobile and API.
 
-### Phase 5 — Realtime, CI/CD & Launch Prep (Weeks 16–18)
+### Phase 5 — Realtime, CI/CD & Launch Prep (Weeks 16–18) [COMPLETED]
 **Goal**: Push notifications, automated deployments, and load testing.
 - Realtime outbreak alerts via Supabase Realtime and Expo Notifications.
 - GitHub Actions CI/CD pipeline (Prisma migrate + EAS Build).
 - Load testing and tuning against capacity estimates.
+
+### Phase 6 — UI/UX Overhaul & Parity Tuning [COMPLETED]
+**Goal**: Modernize web interface to achieve complete parity with the Android mobile app, establishing premium visual guidelines.
+- **Light Theme Migration**: Fully replaced the dark palette with slate-grey/mint-green gradients (`#F8FAFC`, `#ECFDF5`) and slate-text colors for a premium, clean look.
+- **Unified Header & Navigation Layout**: Created a global, fixed header (`top: 0; left: 0; right: 0; z-index: 105;`) extending across the top of the viewport. Shifted sidebar menu down to `top: 92px` (meeting the header border) and removed duplicate logo text to keep page headers cleanly aligned on the far left.
+- **Mobile Grid Adaptations**: Reconfigured responsive grid selectors so stats panels display in a clean 2x2 column set (`repeat(2, 1fr)`) instead of stacking vertically or getting squished on mobile screens.
+
+### Phase 7 — Digital Twin & Recovery Monitoring [COMPLETED]
+**Goal**: Create lifelong animal profiles, recovery tracking, and certification.
+- **Digital Twin profile**: Implemented detailed diagnostic histories, tag parameters, and recovery status toggles in `AnimalDetail.jsx`.
+- **Livestock Health Certificate**: One-click print/save PDF layout for insurance claims and bank loans (`Certificate.jsx`).
+
+### Phase 8 — Intelligence & Predictive Analytics [COMPLETED]
+**Goal**: Outbreak tracking, spatial intelligence, and surveillance networks.
+- **Surveillance Heatmap**: Built interactive GIS outbreak mapping displaying 14-day forecasts and seasonal filters (`Heatmap.jsx`).
+- **Community Intelligence Feed**: Implemented interactive crowdsourced community advisory and alert feed (`Community.jsx`).
+
+### Phase 9 — Smart Farm & Conversational AI [COMPLETED]
+**Goal**: Smart analytics, IoT feeds, and conversational diagnostic assistants.
+- **AI Vet Assistant**: Powered by Google Gemini, giving farmers real-time first-aid diagnostics and symptom checks (`Chat.jsx`).
+- **AI Farm Productivity Score**: Standardized key performance indicators (KPIs) into a visual farm performance scoring ring (`FarmScore.jsx`).
+- **IoT Smart Livestock Monitor**: Real-time sensor dashboard reporting animal temperature, GPS location, rumination timelines, and activity heart rate with active alerts (`IoT.jsx`).
+
+---
 
 ## 🧪 5. Testing & Validation Strategy
 - **Phase 0**: Environment smoke tests, schema migration test, monorepo build test.
@@ -69,27 +93,13 @@ PashuRakshak is an offline-first Edge AI system that detects livestock diseases 
 - **Phase 3**: Vet lookup accuracy test, GIST index performance test, Admin dashboard E2E test, Audit log verification.
 - **Phase 4**: ML microservice contract tests, validation tests, dependency security scan, ML soak test.
 - **Phase 5**: Offline-first E2E flow test, cross-platform parity E2E, Load tests, Penetration test.
+- **Phase 6**: Visual validation testing using automated browser agent layout audits across viewports.
 
 ---
 
-## 🔮 6. V3 Vision: AI Livestock Intelligence Platform (Future Phases)
+## 🔮 6. Future Platform Roadmap
+With the core AI-powered diagnostics, smart telemetry, and surveillance fully established, the platform's future phases will focus on distributed scaling:
 
-With the core offline diagnosis established, PashuRakshak will evolve into a comprehensive livestock intelligence platform.
-
-### Phase 7 — Digital Twin & Recovery Monitoring
-* **Digital Twin for Every Animal**: Create a lifelong digital identity containing health history, vaccinations, milk production, and AI diagnosis history via QR Code.
-* **Disease Progression & Recovery Monitoring**: Daily image timelines, recovery percentage graphs, and AI predictions of healing.
-* **Livestock Insurance & Health Certificates**: One-click PDF generation of health reports for insurance claims and bank loans.
-
-### Phase 8 — Intelligence & Predictive Analytics
-* **AI Disease Outbreak Prediction Map**: Predict outbreak probability (7-14 days) using weather, historical data, and livestock density on a GIS heatmap.
-* **Disease Heatmap with Time Slider**: Interactive GIS visualization of historical disease spread and seasonal trends.
-* **Community Disease Intelligence Network**: Crowdsourced anonymous disease surveillance alerting villages to nearby clusters.
-
-### Phase 9 — Smart Farm & Conversational AI
-* **AI Veterinary Assistant**: Multilingual (Hindi, Marathi, English) voice & text chatbot for symptom-based triage and first-aid measures.
-* **AI Farm Productivity Score**: Combine health, vaccination, and milk yield data into a holistic monthly farm performance score.
-* **IoT-Based Smart Livestock Monitoring**: Integrate smart collars for real-time temperature, heart rate, and GPS tracking to predict diseases before symptoms appear.
-
-### Phase 10 — Advanced Edge AI
+### Phase 10 — Advanced Edge AI & Scaled Deployment
 * **Federated Learning AI Platform**: Privacy-preserving on-device model training where encrypted model weights are aggregated globally to improve AI accuracy without uploading raw photos.
+* **Veterinary Teleconsultation Portal**: Secure video-link portal connecting farmers with local vets directly from the AI vet chat window.

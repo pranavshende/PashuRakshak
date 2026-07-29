@@ -1,0 +1,115 @@
+.sidebar {
+  width: var(--sidebar-width);
+  height: calc(100vh - 92px);
+  position: fixed;
+  left: 0;
+  top: 92px;
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  z-index: 100;
+  transition: var(--transition);
+}
+
+.sidebar-header {
+  height: 92px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background: linear-gradient(180deg, #F8FAFC 0%, #ECFDF5 100%);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+  box-sizing: border-box;
+}
+
+.brand-logo {
+  font-size: 24px;
+  font-weight: 800;
+  color: #16A34A;
+  letter-spacing: -0.5px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  padding: 0 16px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 24px;
+  color: #334155;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.sidebar-link:hover {
+  background-color: #F1F5F9;
+  color: #0F172A;
+}
+
+.sidebar-link.active {
+  background-color: #DCFCE7;
+  color: #16A34A;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 24px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #064E3B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  color: #EF4444;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 24px;
+  transition: all 0.2s ease;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.logout-btn:hover {
+  background-color: #FEE2E2;
+}

@@ -43,20 +43,18 @@ export default function Chat() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', margin: '-32px', overflow: 'hidden' }}>
-      <div style={{ padding: '0 32px' }}>
-        <TopHeaderBanner title="AI Vet Assistant" subtitle="Powered by Google Gemini — 24/7 cattle health consultation" />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 68px)', overflow: 'hidden', background: '#F8FAFC' }}>
+      <TopHeaderBanner title="AI Vet Assistant" subtitle="Powered by Google Gemini — 24/7 cattle health consultation" />
 
       {/* Suggestion chips */}
-      <div style={{ padding: '0 32px 12px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ padding: '12px 24px 12px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {SUGGESTIONS.map(s => (
           <button key={s} className="chat-chip" onClick={() => sendMessage(s)}>{s}</button>
         ))}
       </div>
 
       {/* Messages */}
-      <div className="chat-messages" style={{ padding: '12px 32px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="chat-messages" style={{ padding: '12px 24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {messages.map((msg, i) => (
           <div key={i} className={`chat-bubble-row${msg.sender === 'user' ? ' user' : ''} animate-fade-in`}>
             <div className="chat-avatar" style={{
@@ -81,7 +79,7 @@ export default function Chat() {
       </div>
 
       {/* Input Bar */}
-      <div className="chat-input-bar" style={{ padding: '14px 32px', margin: 0 }}>
+      <div className="chat-input-bar" style={{ padding: '14px 24px', margin: 0, background: '#fff', borderTop: '1px solid var(--border)' }}>
         <input
           className="input"
           value={input}

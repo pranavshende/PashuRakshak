@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import BottomNav from './components/BottomNav';
 import Sidebar from './components/Sidebar';
 import LoadingScreen from './components/LoadingScreen';
 import Home from './pages/Home';
@@ -28,10 +29,11 @@ const ProtectedRoute = ({ children }) => {
     <div className="app-shell">
       <Sidebar />
       <main className="main-content">
-        <div className="page-wrapper animate-fade-in">
+        <div className="page-wrapper animate-fade-in-fast">
           {children}
         </div>
       </main>
+      <BottomNav />
     </div>
   );
 };

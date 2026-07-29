@@ -15,7 +15,7 @@ export default function AnimalDetail() {
 
   const fetchAnimal = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('userToken');
       const res = await fetch(`${API_BASE_URL}/animals/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -30,7 +30,7 @@ export default function AnimalDetail() {
 
   const handleRecovery = async (predictionId, status) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('userToken');
       await fetch(`${API_BASE_URL}/predict/${predictionId}/recovery`, {
         method: 'POST',
         headers: {

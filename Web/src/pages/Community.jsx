@@ -42,74 +42,76 @@ export default function Community() {
         </button>
       </TopHeaderBanner>
 
-      {/* New Post Box */}
-      {showPostBox && (
-        <div className="card mb-4 animate-fade-in">
-          <textarea
-            className="input"
-            style={{ height: 100, marginBottom: 12 }}
-            placeholder="Share a disease alert, tip, or recovery story with the community..."
-            value={newPost}
-            onChange={e => setNewPost(e.target.value)}
-          />
-          <div className="flex-end gap-3">
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowPostBox(false)}>Cancel</button>
-            <button className="btn btn-primary btn-sm" onClick={() => { setShowPostBox(false); setNewPost(''); }}>Post</button>
+      <div className="page-content-container">
+        {/* New Post Box */}
+        {showPostBox && (
+          <div className="card mb-4 animate-fade-in">
+            <textarea
+              className="input"
+              style={{ height: 100, marginBottom: 12 }}
+              placeholder="Share a disease alert, tip, or recovery story with the community..."
+              value={newPost}
+              onChange={e => setNewPost(e.target.value)}
+            />
+            <div className="flex-end gap-3">
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowPostBox(false)}>Cancel</button>
+              <button className="btn btn-primary btn-sm" onClick={() => { setShowPostBox(false); setNewPost(''); }}>Post</button>
+            </div>
           </div>
+        )}
+
+        {/* Filter Tabs */}
+        <div className="tab-pills">
+          {CATEGORIES.map(c => (
+            <button key={c} className={`tab-pill${filter === c ? ' active' : ''}`} onClick={() => setFilter(c)}>{c}</button>
+          ))}
         </div>
-      )}
 
-      {/* Filter Tabs */}
-      <div className="tab-pills">
-        {CATEGORIES.map(c => (
-          <button key={c} className={`tab-pill${filter === c ? ' active' : ''}`} onClick={() => setFilter(c)}>{c}</button>
-        ))}
-      </div>
-
-      {/* Posts */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {POSTS.map(post => (
-          <div key={post.id} className="card animate-fade-in">
-            {/* Header */}
-            <div className="flex-between mb-3">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 20, background: 'linear-gradient(135deg, #16A34A, #0F766E)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                  {post.avatar}
-                </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>{post.user}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>📍 {post.location} · {post.time}</div>
+        {/* Posts */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {POSTS.map(post => (
+            <div key={post.id} className="card animate-fade-in">
+              {/* Header */}
+              <div className="flex-between mb-3">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 20, background: 'linear-gradient(135deg, #16A34A, #0F766E)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                    {post.avatar}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>{post.user}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>📍 {post.location} · {post.time}</div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Text */}
-            <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 12 }}>{post.text}</div>
+              {/* Text */}
+              <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 12 }}>{post.text}</div>
 
-            {/* Tags */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-              {post.tags.map(t => (
-                <span key={t} className="badge badge-primary">#{t}</span>
-              ))}
-            </div>
+              {/* Tags */}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                {post.tags.map(t => (
+                  <span key={t} className="badge badge-primary">#{t}</span>
+                ))}
+              </div>
 
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-              <button
-                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: likes[post.id] ? '#EF4444' : 'var(--text-muted)', fontWeight: 600 }}
-                onClick={() => toggleLike(post.id)}
-              >
-                {likes[post.id] ? '❤️' : '🤍'} {post.likes + (likes[post.id] ? 1 : 0)}
-              </button>
-              <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>
-                💬 {post.comments}
-              </button>
-              <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>
-                📤 Share
-              </button>
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                <button
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: likes[post.id] ? '#EF4444' : 'var(--text-muted)', fontWeight: 600 }}
+                  onClick={() => toggleLike(post.id)}
+                >
+                  {likes[post.id] ? '❤️' : '🤍'} {post.likes + (likes[post.id] ? 1 : 0)}
+                </button>
+                <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>
+                  💬 {post.comments}
+                </button>
+                <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>
+                  📤 Share
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

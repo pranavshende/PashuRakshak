@@ -15,7 +15,7 @@ export default function Certificate() {
 
   const fetchAnimal = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('userToken');
       const res = await fetch(`${API_BASE_URL}/animals/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });

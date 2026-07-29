@@ -34,50 +34,52 @@ export default function Medicine() {
     <div>
       <TopHeaderBanner title="Medicine Database" subtitle="Veterinary medicines, dosages & usage guidelines" />
 
-      <div className="search-bar mb-4">
-        <span className="search-icon">🔍</span>
-        <input className="input" style={{ paddingLeft: 40 }} placeholder="Search medicines..." value={search} onChange={e => setSearch(e.target.value)} />
-      </div>
-
-      <div className="tab-pills">
-        {CATEGORIES.map(c => (
-          <button key={c} className={`tab-pill${category === c ? ' active' : ''}`} onClick={() => setCategory(c)}>{c}</button>
-        ))}
-      </div>
-
-      <div className="grid-auto">
-        {filtered.map((med, i) => (
-          <div key={i} className="card card-clickable" onClick={() => setSelected(selected?.name === med.name ? null : med)}>
-            <div className="flex gap-3 mb-3">
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                {med.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>{med.name}</div>
-                <span className="badge badge-primary mt-1">{med.category}</span>
-              </div>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{med.usage}</div>
-
-            {selected?.name === med.name && (
-              <div className="animate-fade-in" style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Composition</div>
-                <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 10 }}>{med.composition}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Dosage</div>
-                <div className="medicine-item"><span>💊</span>{med.dosage}</div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-icon">💊</div>
-          <div className="empty-title">No medicines found</div>
-          <div className="empty-desc">Try a different search or category.</div>
+      <div className="page-content-container">
+        <div className="search-bar mb-4">
+          <span className="search-icon">🔍</span>
+          <input className="input" style={{ paddingLeft: 40 }} placeholder="Search medicines..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-      )}
+
+        <div className="tab-pills">
+          {CATEGORIES.map(c => (
+            <button key={c} className={`tab-pill${category === c ? ' active' : ''}`} onClick={() => setCategory(c)}>{c}</button>
+          ))}
+        </div>
+
+        <div className="grid-auto">
+          {filtered.map((med, i) => (
+            <div key={i} className="card card-clickable" onClick={() => setSelected(selected?.name === med.name ? null : med)}>
+              <div className="flex gap-3 mb-3">
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                  {med.icon}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>{med.name}</div>
+                  <span className="badge badge-primary mt-1">{med.category}</span>
+                </div>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{med.usage}</div>
+
+              {selected?.name === med.name && (
+                <div className="animate-fade-in" style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Composition</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 10 }}>{med.composition}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Dosage</div>
+                  <div className="medicine-item"><span>💊</span>{med.dosage}</div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-icon">💊</div>
+            <div className="empty-title">No medicines found</div>
+            <div className="empty-desc">Try a different search or category.</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

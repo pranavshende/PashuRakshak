@@ -56,49 +56,51 @@ export default function FarmScore() {
     <div>
       <TopHeaderBanner title="Farm Health Score" subtitle="AI-powered farm performance intelligence" />
 
-      <div className="grid-2" style={{ gap: 20, alignItems: 'start' }}>
-        {/* Score Ring */}
-        <div className="card flex-center" style={{ flexDirection: 'column', padding: 32 }}>
-          <ScoreRing score={76} />
+      <div className="page-content-container">
+        <div className="grid-2" style={{ gap: 20, alignItems: 'start' }}>
+          {/* Score Ring */}
+          <div className="card flex-center" style={{ flexDirection: 'column', padding: 32 }}>
+            <ScoreRing score={76} />
+          </div>
+
+          {/* Breakdown */}
+          <div className="card">
+            <div className="section-title">Score Breakdown</div>
+            {SCORE_BREAKDOWN.map((item, i) => (
+              <div key={i} style={{ marginBottom: 18 }}>
+                <div className="flex-between mb-2">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>{item.icon}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{item.label}</span>
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: item.color }}>{item.score}</span>
+                </div>
+                <div className="confidence-bar-track">
+                  <div className="confidence-bar-fill" style={{ width: `${item.score}%`, background: `linear-gradient(90deg, ${item.color}, ${item.color}99)` }} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Breakdown */}
-        <div className="card">
-          <div className="section-title">Score Breakdown</div>
-          {SCORE_BREAKDOWN.map((item, i) => (
-            <div key={i} style={{ marginBottom: 18 }}>
-              <div className="flex-between mb-2">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>{item.icon}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{item.label}</span>
-                </div>
-                <span style={{ fontSize: 14, fontWeight: 800, color: item.color }}>{item.score}</span>
+        {/* Improvement Tips */}
+        <div className="card mt-4">
+          <div className="section-title">💡 Improvement Recommendations</div>
+          {TIPS.map((tip, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '12px 0', borderBottom: i < TIPS.length - 1 ? '1px solid var(--border)' : 'none'
+            }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+                {tip.icon}
               </div>
-              <div className="confidence-bar-track">
-                <div className="confidence-bar-fill" style={{ width: `${item.score}%`, background: `linear-gradient(90deg, ${item.color}, ${item.color}99)` }} />
-              </div>
+              <div style={{ flex: 1, fontSize: 13, color: 'var(--text-sub)' }}>{tip.text}</div>
+              <span className={`badge ${tip.priority === 'High' ? 'badge-critical' : tip.priority === 'Medium' ? 'badge-moderate' : 'badge-low'}`}>
+                {tip.priority}
+              </span>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Improvement Tips */}
-      <div className="card mt-4">
-        <div className="section-title">💡 Improvement Recommendations</div>
-        {TIPS.map((tip, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'center', gap: 14,
-            padding: '12px 0', borderBottom: i < TIPS.length - 1 ? '1px solid var(--border)' : 'none'
-          }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-              {tip.icon}
-            </div>
-            <div style={{ flex: 1, fontSize: 13, color: 'var(--text-sub)' }}>{tip.text}</div>
-            <span className={`badge ${tip.priority === 'High' ? 'badge-critical' : tip.priority === 'Medium' ? 'badge-moderate' : 'badge-low'}`}>
-              {tip.priority}
-            </span>
-          </div>
-        ))}
       </div>
     </div>
   );
