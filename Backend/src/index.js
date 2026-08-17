@@ -13,6 +13,7 @@ const animalRoutes = require('./routes/animals');
 const chatRoutes = require('./routes/chat');
 const outbreakRoutes = require('./routes/outbreaks');
 const farmRoutes = require('./routes/farm');
+const communityRoutes = require('./routes/community');
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/animals', animalRoutes);
 app.use('/chat', chatRoutes);
 app.use('/outbreaks', outbreakRoutes);
 app.use('/farm', farmRoutes);
+app.use('/community', communityRoutes);
 
 // Protected Route Example
 app.get('/protected', passport.authenticate('jwt', { session: false }), (req, res) => {

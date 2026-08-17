@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const { requireAuth } = require('../middlewares/authMiddleware');
 const { GoogleGenAI } = require('@google/genai');
+const prisma = require('../config/db');
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -18,6 +19,46 @@ Always advise the user to consult a professional veterinarian for serious condit
 Keep your answers concise, practical, and easy to understand.
 `;
 
+// Get chat history
+router.get('/history', requireAuth, async (req, res) => {
+  try {
+    let conversation = await prisma.conversation.findFirst({
+      where: { userId: req.user.id },
+      include: { messages: { orderBy: { createdAt: 'asc' } } }
+    });
+
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        data: { userId: req.user.id, title: 'AI Vet Consultation' },
+        include: { messages: true }
+      });
+    }
+
+    res.json({ conversation });
+  } catch (error) {
+    console.error('Fetch History Error:', error);
+    res.status(500).json({ error: 'Failed to fetch chat history' });
+  }
+});
+
+// Clear Chat history
+router.delete('/clear', requireAuth, async (req, res) => {
+  try {
+    const conversation = await prisma.conversation.findFirst({
+      where: { userId: req.user.id }
+    });
+    if (conversation) {
+      await prisma.message.deleteMany({
+        where: { conversationId: conversation.id }
+      });
+    }
+    res.json({ success: true, message: 'Consultation history cleared successfully.' });
+  } catch (error) {
+    console.error('Clear History Error:', error);
+    res.status(500).json({ error: 'Failed to clear chat history' });
+  }
+});
+
 // Text chat route
 router.post('/', requireAuth, async (req, res) => {
   try {
@@ -27,31 +68,46 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
     
+    let conversation = await prisma.conversation.findFirst({
+      where: { userId: req.user.id }
+    });
+
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        data: { userId: req.user.id, title: 'AI Vet Consultation' }
+      });
+    }
+
+    // Save user message
+    await prisma.message.create({
+      data: { conversationId: conversation.id, sender: 'user', text: message }
+    });
+
     let langPrompt = '';
     if (language && language !== 'English') {
       langPrompt = `\nPlease respond entirely in ${language}.`;
     }
 
+    let aiText = '';
     if (!process.env.GEMINI_API_KEY) {
-      return res.json({ 
-        response: `[Mock AI Response in ${language || 'English'}]: I see you are asking about: "${message}". Please provide a GEMINI_API_KEY in the .env file to activate the real AI assistant.` 
+      aiText = `[Mock AI Response in ${language || 'English'}]: I see you are asking about: "${message}". Please provide a GEMINI_API_KEY in the .env file to activate the real AI assistant.`;
+    } else {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: SYSTEM_PROMPT + langPrompt + "\n\nUser: " + message,
+        config: {
+          temperature: 0.2,
+        }
       });
+      aiText = response.text ? response.text.replace(/\\n/g, '\n') : 'Error generating response';
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: SYSTEM_PROMPT + langPrompt + "\n\nUser: " + message,
-      config: {
-        temperature: 0.2,
-      }
+    // Save AI message
+    await prisma.message.create({
+      data: { conversationId: conversation.id, sender: 'bot', text: aiText }
     });
 
-    if (response.text) {
-      const cleanResponse = response.text.replace(/\\n/g, '\n');
-      res.json({ response: cleanResponse });
-    } else {
-      res.status(500).json({ error: 'Empty response from AI.' });
-    }
+    res.json({ response: aiText });
     
   } catch (error) {
     console.error('Chat API Error:', error);

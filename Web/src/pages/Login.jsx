@@ -4,6 +4,93 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { Phone, Lock, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
+const FormCard = ({ phone, setPhone, password, setPassword, handleLogin }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4 }}
+    style={{
+      width: '100%',
+      maxWidth: '420px',
+      marginLeft: 'auto',
+      marginRight: 'auto',
+      marginBottom: '32px',
+      background: 'white',
+      borderRadius: '20px',
+      padding: '32px 28px',
+      boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
+    }}
+  >
+    <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        background: '#F1F5F9', padding: '6px 14px', borderRadius: '100px',
+        color: '#0F172A', fontSize: '12px', fontWeight: 600, marginBottom: '16px',
+      }}>
+        <ShieldCheck size={14} color="#059669" /> Secure Portal Login
+      </div>
+      <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+        Welcome Back
+      </h2>
+      <p style={{ color: '#64748B', fontSize: '14px' }}>
+        Sign in to manage your livestock health records.
+      </p>
+    </div>
+
+    <form onSubmit={handleLogin}>
+      <div style={{ marginBottom: '18px' }}>
+        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+          Registered Phone Number
+        </label>
+        <div style={{ position: 'relative' }}>
+          <Phone size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+          <input
+            type="tel"
+            className="input"
+            style={{ paddingLeft: '44px', width: '100%' }}
+            placeholder="+91 00000 00000"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Password / OTP</label>
+          <a href="#" style={{ fontSize: '12px', color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Forgot?</a>
+        </div>
+        <div style={{ position: 'relative' }}>
+          <Lock size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+          <input
+            type="password"
+            className="input"
+            style={{ paddingLeft: '44px', width: '100%' }}
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+      </div>
+
+      <button type="submit" className="btn btn-primary" style={{ width: '100%', height: '50px', fontSize: '16px', fontWeight: 700 }}>
+        Access Account
+      </button>
+    </form>
+
+    <div style={{ marginTop: '24px', textAlign: 'center' }}>
+      <p style={{ fontSize: '14px', color: '#64748B' }}>
+        Don't have a farm registered?{' '}
+        <Link to="/register" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>
+          Register Now
+        </Link>
+      </p>
+    </div>
+  </motion.div>
+);
+
 export default function Login() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -37,93 +124,6 @@ export default function Login() {
     'Digital Twin Health Records',
   ];
 
-  const FormCard = () => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      style={{
-        width: '100%',
-        maxWidth: '420px',
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        marginBottom: '32px',
-        background: 'white',
-        borderRadius: '20px',
-        padding: '32px 28px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
-      }}
-    >
-      <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '6px',
-          background: '#F1F5F9', padding: '6px 14px', borderRadius: '100px',
-          color: '#0F172A', fontSize: '12px', fontWeight: 600, marginBottom: '16px',
-        }}>
-          <ShieldCheck size={14} color="#059669" /> Secure Portal Login
-        </div>
-        <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
-          Welcome Back
-        </h2>
-        <p style={{ color: '#64748B', fontSize: '14px' }}>
-          Sign in to manage your livestock health records.
-        </p>
-      </div>
-
-      <form onSubmit={handleLogin}>
-        <div style={{ marginBottom: '18px' }}>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-            Registered Phone Number
-          </label>
-          <div style={{ position: 'relative' }}>
-            <Phone size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input
-              type="tel"
-              className="input"
-              style={{ paddingLeft: '44px', width: '100%' }}
-              placeholder="+91 00000 00000"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-
-        <div style={{ marginBottom: '28px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Password / OTP</label>
-            <a href="#" style={{ fontSize: '12px', color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Forgot?</a>
-          </div>
-          <div style={{ position: 'relative' }}>
-            <Lock size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input
-              type="password"
-              className="input"
-              style={{ paddingLeft: '44px', width: '100%' }}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-
-        <button type="submit" className="btn btn-primary" style={{ width: '100%', height: '50px', fontSize: '16px', fontWeight: 700 }}>
-          Access Account
-        </button>
-      </form>
-
-      <div style={{ marginTop: '24px', textAlign: 'center' }}>
-        <p style={{ fontSize: '14px', color: '#64748B' }}>
-          Don't have a farm registered?{' '}
-          <Link to="/register" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>
-            Register Now
-          </Link>
-        </p>
-      </div>
-    </motion.div>
-  );
-
   return (
     <>
       {/* ─── MOBILE LAYOUT (hidden on desktop) ─── */}
@@ -153,7 +153,13 @@ export default function Login() {
 
         {/* Card pulled up over green strip */}
         <div style={{ padding: '0 16px', marginTop: '-40px', flex: 1 }}>
-          <FormCard />
+          <FormCard 
+            phone={phone} 
+            setPhone={setPhone} 
+            password={password} 
+            setPassword={setPassword} 
+            handleLogin={handleLogin} 
+          />
         </div>
       </div>
 
@@ -207,7 +213,13 @@ export default function Login() {
           padding: '40px',
           background: '#F8FAFC',
         }}>
-          <FormCard />
+          <FormCard 
+            phone={phone} 
+            setPhone={setPhone} 
+            password={password} 
+            setPassword={setPassword} 
+            handleLogin={handleLogin} 
+          />
         </div>
       </div>
 

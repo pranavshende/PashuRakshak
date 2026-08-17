@@ -1051,6 +1051,26 @@ select.input { appearance: none; cursor: pointer; }
   .login-mobile-bar { display: flex !important; align-items: center; justify-content: space-between; background: #064E3B; padding: 14px 20px; }
   .login-left-panel { display: none !important; }
   .login-shell { flex-direction: column !important; min-height: calc(100vh - 52px); }
-  .login-right-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
   .login-card { padding: 28px 20px !important; border-radius: 16px !important; }
+}
+
+@media print {
+  .no-print,
+  .sidebar,
+  .top-header-banner,
+  .bottom-nav {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  .container {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  body {
+    background-color: white !important;
+  }
 }

@@ -71,4 +71,72 @@ router.post('/login', (req, res, next) => {
   })(req, res, next);
 });
 
+const { requireAuth } = require('../middlewares/authMiddleware');
+
+// Get Current User Profile
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { 
+        id: true, 
+        name: true, 
+        phone: true, 
+        role: true, 
+        email: true, 
+        farmName: true, 
+        language: true, 
+        notificationsEnabled: true 
+      }
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ user });
+  } catch (error) {
+    console.error('Fetch Profile Error:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Update Profile
+router.put('/profile', requireAuth, async (req, res) => {
+  try {
+    const { name, phone, email, farmName, language, notificationsEnabled } = req.body;
+    
+    // Check if phone belongs to another user
+    if (phone) {
+      const existing = await prisma.user.findUnique({ where: { phone } });
+      if (existing && existing.id !== req.user.id) {
+        return res.status(400).json({ error: 'Phone number already in use by another account.' });
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { 
+        ...(name !== undefined && { name }), 
+        ...(phone !== undefined && { phone }),
+        ...(email !== undefined && { email }),
+        ...(farmName !== undefined && { farmName }),
+        ...(language !== undefined && { language }),
+        ...(notificationsEnabled !== undefined && { notificationsEnabled })
+      },
+      select: { 
+        id: true, 
+        name: true, 
+        phone: true, 
+        role: true, 
+        email: true, 
+        farmName: true, 
+        language: true, 
+        notificationsEnabled: true 
+      }
+    });
+
+    res.json({ user: updatedUser });
+  } catch (error) {
+    console.error('Update Profile Error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
 module.exports = router;

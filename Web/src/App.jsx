@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import BottomNav from './components/BottomNav';
 import Sidebar from './components/Sidebar';
+import GlobalHeader from './components/GlobalHeader';
 import LoadingScreen from './components/LoadingScreen';
 import Home from './pages/Home';
 
@@ -27,8 +28,9 @@ const ProtectedRoute = ({ children }) => {
   if (!user) return <Navigate to="/login" replace />;
   return (
     <div className="app-shell">
+      <GlobalHeader />
       <Sidebar />
-      <main className="main-content">
+      <main className="main-content" style={{ paddingTop: '92px' }}>
         <div className="page-wrapper animate-fade-in-fast">
           {children}
         </div>

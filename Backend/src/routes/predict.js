@@ -279,6 +279,30 @@ router.post('/analyze', requireAuth, upload.single('file'), async (req, res) => 
   }
 });
 
+// ─── GET /predict/recent ──────────────────────────────────────────────────────
+router.get('/recent', requireAuth, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const predictions = await prisma.prediction.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        disease: true,
+        riskLevel: true,
+        confidence: true,
+        createdAt: true,
+        imagePath: true
+      }
+    });
+    res.json({ predictions });
+  } catch (error) {
+    console.error('[Predict] Recent error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch recent scans.' });
+  }
+});
+
 // ─── POST /predict/sync ───────────────────────────────────────────────────────
 router.post('/sync', requireAuth, validate(syncSchema), async (req, res) => {
   try {

@@ -13,14 +13,22 @@ enum Role {
 }
  
 model User {
-  id          String   @id @default(uuid())
-  name        String
-  phone       String   @unique
-  password    String?  // Made optional in case of Supabase Auth
-  role        Role     @default(FARMER)
-  createdAt   DateTime @default(now())
-  predictions Prediction[]
-  animals     Animal[]
+  id                  String   @id @default(uuid())
+  name                String
+  phone               String   @unique
+  email               String?
+  farmName            String?
+  password            String?  // Made optional in case of Supabase Auth
+  role                Role     @default(FARMER)
+  language            String   @default("English")
+  notificationsEnabled Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  predictions         Prediction[]
+  animals             Animal[]
+  communityPosts      CommunityPost[]
+  communityLikes      CommunityLike[]
+  communityComments   CommunityComment[]
+  conversations       Conversation[]
 }
  
 model Prediction {
@@ -64,16 +72,27 @@ model Vet {
 }
 
 model Animal {
-  id           String         @id @default(uuid())
-  tagId        String         @unique // For QR Codes
-  name         String?
-  breed        String?
-  dateOfBirth  DateTime?
-  weight       Float?         // Latest weight
-  userId       String
-  user         User           @relation(fields: [userId], references: [id])
-  createdAt    DateTime       @default(now())
+  id                String         @id @default(uuid())
+  tagId             String         @unique // For QR Codes
+  name              String?
+  breed             String?
+  gender            String?        // Male/Female
+  dateOfBirth       DateTime?
+  weight            Float?         // Latest weight
+  userId            String
+  user              User           @relation(fields: [userId], references: [id])
+  createdAt         DateTime       @default(now())
   
+  // IoT Sensor Fields
+  temperature       Float?
+  heartRate         Float?
+  ruminationTime    Float?
+  activityLevel     Float?
+  latitude          Float?
+  longitude         Float?
+  sensorStatus      String?        // e.g. "LIVE", "OFFLINE", "NONE"
+  lastSensorUpdate  DateTime?
+
   vaccinations Vaccination[]
   milkRecords  MilkRecord[]
   predictions  Prediction[]
@@ -103,4 +122,54 @@ model DiseaseReport {
   longitude   Float
   severity    String   @default("Medium") // High, Medium, Low
   reportedAt  DateTime @default(now())
+}
+
+model CommunityPost {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  tags      String[] // Array of strings (e.g. ["Alert", "FMD"])
+  location  String?
+  createdAt DateTime @default(now())
+  likes     CommunityLike[]
+  comments  CommunityComment[]
+}
+
+model CommunityLike {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([userId, postId])
+}
+
+model CommunityComment {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  createdAt DateTime @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         String   // "user" or "bot"
+  text           String
+  createdAt      DateTime @default(now())
 }

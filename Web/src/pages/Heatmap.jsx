@@ -1,47 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Activity, Sliders } from 'lucide-react';
-import { API_BASE_URL } from '../config/api';
+import { ArrowLeft, Sliders, Activity } from 'lucide-react';
+import { api } from '../services/api';
+
+const DISEASES = ['All', 'Lumpy Skin Disease', 'Foot & Mouth Disease', 'Bovine Mastitis', 'Blackquarter (BQ)', 'Haemorrhagic Septicaemia'];
 
 export default function Heatmap() {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [days, setDays] = useState(30);
+  const [selectedDisease, setSelectedDisease] = useState('All');
   const [showPredictions, setShowPredictions] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
-  }, [days, showPredictions]);
+  }, [days, showPredictions, selectedDisease]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const endpoint = showPredictions ? 'predict' : `historical?days=${days}`;
-      const res = await fetch(`${API_BASE_URL}/outbreaks/${endpoint}`);
-      const json = await res.json();
-      if (json.data) setData(json.data);
+      if (showPredictions) {
+        const json = await api.getOutbreakPredictions();
+        if (json.data) setData(json.data);
+      } else {
+        const json = await api.getOutbreaks(days, selectedDisease);
+        if (json.data) setData(json.data);
+      }
     } catch (e) {
       console.error(e);
+      setData([]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container" style={{ padding: '40px 24px', maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <button onClick={() => navigate('/')} className="btn btn-ghost" style={{ padding: '0 8px' }}>
+    <div className="container" style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <button onClick={() => navigate('/dashboard')} className="btn btn-ghost" style={{ padding: '0 8px' }}>
           <ArrowLeft size={20} /> Back to Dashboard
         </button>
       </div>
 
-      <h1 style={{ marginBottom: '8px' }}>🛰️ AI Disease Outbreak Prediction Map</h1>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>Interactive GIS surveillance visualization and 14-day AI forecast.</p>
+      <h1 style={{ marginBottom: '8px', fontSize: '24px', fontWeight: 800 }}>🛰️ AI Disease Outbreak Surveillance Map</h1>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '14px' }}>Interactive GIS surveillance visualization and 14-day AI forecast.</p>
 
       {/* Control Bar */}
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', marginBottom: '32px', flexWrap: 'wrap', gap: '16px', background: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
             <div style={{ position: 'relative', width: '48px', height: '24px' }}>
               <input 
@@ -61,16 +68,32 @@ export default function Heatmap() {
                 }} />
               </div>
             </div>
-            <span style={{ fontWeight: '600', color: showPredictions ? 'var(--secondary-dark)' : 'var(--text-main)', transition: '0.3s' }}>
+            <span style={{ fontWeight: '600', color: showPredictions ? 'var(--secondary-dark)' : 'var(--text-main)', transition: '0.3s', fontSize: '14px' }}>
               Enable AI 14-Day Forecast Mode
             </span>
           </label>
+
+          {!showPredictions && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600 }}>Disease Filter:</span>
+              <select 
+                className="input" 
+                style={{ width: '180px', height: '36px', padding: '0 8px', fontSize: '12px' }}
+                value={selectedDisease}
+                onChange={e => setSelectedDisease(e.target.value)}
+              >
+                {DISEASES.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {!showPredictions && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '400px' }}>
-            <Sliders size={20} color="var(--text-muted)" />
-            <span style={{ fontSize: '15px', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>Time Window: <strong style={{ color: 'var(--primary-dark)' }}>{days} Days</strong></span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '320px' }}>
+            <Sliders size={18} color="var(--text-muted)" />
+            <span style={{ fontSize: '13px', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>Time Window: <strong style={{ color: 'var(--primary-dark)' }}>{days} Days</strong></span>
             <input 
               type="range" 
               min="1" 
@@ -91,11 +114,11 @@ export default function Heatmap() {
           </div>
           {loading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <p style={{ color: '#94A3B8', fontSize: '16px' }}>Fetching GIS data...</p>
+              <div className="spinner" style={{ borderColor: '#fff', borderTopColor: 'var(--primary)' }}></div>
             </div>
           ) : data.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <p style={{ color: '#94A3B8', fontSize: '16px' }}>No outbreaks reported in this timeframe. Run backend seed to view hotspots.</p>
+              <p style={{ color: '#94A3B8', fontSize: '16px' }}>No outbreaks reported in this timeframe.</p>
             </div>
           ) : (
             data.map(report => (
@@ -111,7 +134,7 @@ export default function Heatmap() {
                 }}
               >
                 <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: showPredictions ? '#8B5CF6' : report.severity === 'High' ? '#EF4444' : '#F59E0B' }} />
-                <span style={{ position: 'absolute', bottom: '-28px', whiteSpace: 'nowrap', background: '#000', color: '#fff', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', fontWeight: '500' }}>
+                <span style={{ position: 'absolute', bottom: '-28px', whiteSpace: 'nowrap', background: '#000', color: '#fff', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', fontWeight: '500', zIndex: 20 }}>
                   {report.diseaseName} ({showPredictions ? 'Predicted Risk' : report.severity})
                 </span>
               </div>

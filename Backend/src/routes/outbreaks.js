@@ -5,31 +5,22 @@ const prisma = require('../config/db');
 // Get historical disease clusters (used for Heatmap and Time Slider)
 router.get('/historical', async (req, res) => {
   try {
-    const { days = 30 } = req.query;
+    const { days = 30, disease } = req.query;
     const dateLimit = new Date();
     dateLimit.setDate(dateLimit.getDate() - parseInt(days));
 
+    let whereClause = {
+      reportedAt: { gte: dateLimit }
+    };
+
+    if (disease && disease !== 'All') {
+      whereClause.diseaseName = disease;
+    }
+
     let reports = await prisma.diseaseReport.findMany({
-      where: {
-        reportedAt: { gte: dateLimit }
-      },
+      where: whereClause,
       orderBy: { reportedAt: 'desc' }
     });
-
-    // Auto-seed initial disease reports if database is currently empty
-    if (reports.length === 0) {
-      const initialReports = [
-        { diseaseName: 'Lumpy Skin Disease', latitude: 18.5204, longitude: 73.8567, severity: 'High' }, // Pune
-        { diseaseName: 'Foot & Mouth Disease', latitude: 18.0319, longitude: 73.9856, severity: 'Critical' }, // Satara
-        { diseaseName: 'Bovine Mastitis', latitude: 18.2758, longitude: 74.0152, severity: 'Medium' }, // Purandar
-        { diseaseName: 'Blackquarter (BQ)', latitude: 19.0760, longitude: 72.8777, severity: 'High' }, // Mumbai
-        { diseaseName: 'Haemorrhagic Septicaemia', latitude: 20.0110, longitude: 73.7903, severity: 'High' } // Nashik
-      ];
-      await prisma.diseaseReport.createMany({ data: initialReports });
-      reports = await prisma.diseaseReport.findMany({
-        orderBy: { reportedAt: 'desc' }
-      });
-    }
 
     // Fetch real prediction count from database grouped by disease
     const realPredictions = await prisma.prediction.findMany({

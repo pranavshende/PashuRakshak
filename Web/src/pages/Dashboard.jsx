@@ -1,205 +1,335 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
-import TopHeaderBanner from '../components/TopHeaderBanner';
-import { API_BASE_URL } from '../config/api';
-
-const QUICK_SERVICES = [
-  { icon: '🐄', label: 'My Herd', path: '/herd' },
-  { icon: '💬', label: 'AI Vet Chat', path: '/chat' },
-  { icon: '🗺️', label: 'Disease Map', path: '/heatmap' },
-  { icon: '💊', label: 'Medicine', path: '/medicine' },
-  { icon: '📊', label: 'Farm Score', path: '/farm-score' },
-  { icon: '👥', label: 'Community', path: '/community' },
-  { icon: '📘', label: 'Guidelines', path: '/guidelines' },
-  { icon: '🎧', label: 'Helpline', path: '/helpline' },
-];
-
-const NEWS = [
-  { text: '🚨 [DISEASE ALERT] NADCP Free Vaccination Drive Active in local districts — DAHD' },
-  { text: '🚨 [HEALTH ADVISORY] Lumpy Skin Disease Prevention Advisory for Cattle Farmers — ICAR' },
-  { text: '🏛️ [GOVT SCHEME] Pashu Kisan Credit Card: Up to ₹1.6 Lakh @ 4% Interest — NABARD' },
-  { text: '🏛️ [POLICY] Rashtriya Gokul Mission: Subsidies for Indigenous Livestock — DAHD' },
-];
+import { api } from '../services/api';
+import { Activity, Syringe, Heart, ShieldAlert, Sparkles, MapPin } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [recentScans, setRecentScans] = useState([]);
-  const [stats, setStats] = useState({ animals: 0, scans: 0, alerts: 1 });
+  const [animals, setAnimals] = useState([]);
+  const [news, setNews] = useState([]);
   const [tickerIdx, setTickerIdx] = useState(0);
+  const [farmScore, setFarmScore] = useState(null);
+  const [recentScans, setRecentScans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => setTickerIdx(i => (i + 1) % NEWS.length), 4000);
+    fetchDashboardData();
+  }, []);
+
+  useEffect(() => {
+    if (news.length === 0) return;
+    const interval = setInterval(() => setTickerIdx(i => (i + 1) % news.length), 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [news]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('userToken');
-    if (!token) return;
-    // Fetch recent predictions
-    fetch(`${API_BASE_URL}/animals`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json()).then(d => { if (d.animals) setStats(s => ({ ...s, animals: d.animals.length })); })
-      .catch(() => {});
-  }, []);
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      // Fetch data concurrently
+      const [animalsData, scoreData, newsData] = await Promise.all([
+        api.getAnimals(),
+        api.getFarmScore().catch(() => null),
+        api.getFarmNews().catch(() => ({ news: [] }))
+      ]);
 
-  const firstName = user?.name?.split(' ')[0] || 'Farmer';
+      if (animalsData.animals) {
+        setAnimals(animalsData.animals);
+        // Gather recent scans across all animals predictions
+        const allPreds = [];
+        animalsData.animals.forEach(a => {
+          if (a.predictions) {
+            a.predictions.forEach(p => allPreds.push({ ...p, animalName: a.name || 'Unnamed' }));
+          }
+        });
+        allPreds.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setRecentScans(allPreds.slice(0, 5));
+      }
+
+      if (scoreData) {
+        setFarmScore(scoreData);
+      }
+
+      if (newsData && newsData.news && newsData.news.length > 0) {
+        setNews(newsData.news);
+      } else {
+        setNews([{ title: '✅ No active disease outbreaks in your region.', category: 'HEALTH ADVISORY' }]);
+      }
+    } catch (e) {
+      console.error(e);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStats = () => {
+    const total = animals.length;
+    let healthy = 0;
+    let attention = 0;
+    let critical = 0;
+
+    animals.forEach(a => {
+      if (!a.predictions || a.predictions.length === 0) {
+        healthy++;
+      } else {
+        const latest = a.predictions[0];
+        if (latest.riskLevel === 'CRITICAL' || latest.riskLevel === 'High') {
+          critical++;
+          attention++;
+        } else if (latest.riskLevel === 'MEDIUM' || latest.riskLevel === 'Medium') {
+          attention++;
+        } else {
+          healthy++;
+        }
+      }
+    });
+
+    return { total, healthy, attention, critical };
+  };
+
+  const stats = getStats();
+
+  if (loading) {
+    return (
+      <div className="page-content-container" style={{ padding: '40px 24px', textAlign: 'center' }}>
+        <div className="spinner" style={{ margin: '40px auto' }}></div>
+        <p style={{ color: 'var(--text-muted)' }}>Analyzing livestock health metrics...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-content-container" style={{ padding: '40px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+        <h3>Failed to load farm intelligence</h3>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Please check your internet connection or backend server status.</p>
+        <button className="btn btn-primary" onClick={fetchDashboardData}>Retry Load</button>
+      </div>
+    );
+  }
+
+  // Generate dynamic SVG chart data
+  const renderSVGChart = () => {
+    const maxVal = Math.max(...animals.map(a => a.milkRecords?.reduce((sum, r) => sum + r.quantityLiters, 0) || 0), 10);
+    return (
+      <svg width="100%" height="160" viewBox="0 0 400 160" style={{ overflow: 'visible' }}>
+        <g stroke="var(--border)" strokeWidth="1">
+          <line x1="40" y1="20" x2="380" y2="20" />
+          <line x1="40" y1="70" x2="380" y2="70" />
+          <line x1="40" y1="120" x2="380" y2="120" />
+        </g>
+        <g>
+          {animals.slice(0, 6).map((animal, i) => {
+            const milkSum = animal.milkRecords?.reduce((sum, r) => sum + r.quantityLiters, 0) || 0;
+            const barHeight = maxVal > 0 ? (milkSum / maxVal) * 100 : 0;
+            const x = 50 + i * 55;
+            const y = 120 - barHeight;
+            return (
+              <g key={animal.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/animal/${animal.id}`)}>
+                <rect x={x} y={y} width="24" height={barHeight} fill="url(#grad)" rx="4" />
+                <text x={x + 12} y="140" fill="var(--text-muted)" fontSize="9" textAnchor="middle">
+                  {animal.name?.substring(0, 4) || `Cow ${i}`}
+                </text>
+                <text x={x + 12} y={y - 6} fill="var(--text-main)" fontSize="9" fontWeight="700" textAnchor="middle">
+                  {milkSum.toFixed(0)}L
+                </text>
+              </g>
+            );
+          })}
+        </g>
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#16A34A" />
+            <stop offset="100%" stopColor="#0F766E" />
+          </linearGradient>
+        </defs>
+      </svg>
+    );
+  };
 
   return (
-    <div>
-      <TopHeaderBanner
-        title={`Namaste, ${firstName} 👋`}
-        subtitle="PashuRakshak Livestock Intelligence Platform"
-      />
-
-      <div style={{ padding: '0 24px 24px', maxWidth: 1200, margin: '0 auto' }}>
-        {/* Flash News Ticker */}
-        <div className="news-ticker" style={{ cursor: 'default', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)' }}>
-          <div className="news-ticker-badge" style={{ background: '#EF4444' }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff' }}>📢 FLASH NEWS</span>
+    <div className="page-content-container" style={{ marginTop: '24px' }}>
+      {/* Dynamic News Ticker */}
+      {news.length > 0 && (
+        <div style={{ cursor: 'default', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '12px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+          <div style={{ background: '#DC2626', padding: '3px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.5px' }}>📢 {news[tickerIdx]?.category || 'LIVE ALERT'}</span>
           </div>
-          <div className="news-ticker-text" key={tickerIdx} style={{ animation: 'fade-in-fast 0.3s ease', color: '#0F172A' }}>
-            {NEWS[tickerIdx].text}
+          <div key={tickerIdx} style={{ animation: 'fade-in-fast 0.3s ease', color: '#991B1B', fontSize: '13px', fontWeight: '600', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', flex: 1 }}>
+            {news[tickerIdx]?.title}
           </div>
         </div>
+      )}
 
-        {/* Stats Row */}
-        <div className="grid-4 mb-4" style={{ gap: 8 }}>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: '#16A34A', color: '#fff' }}>🐄</div>
-            <div>
-              <div className="stat-value">{stats.animals}</div>
-              <div className="stat-label">Total Animals</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: '#3B82F6', color: '#fff' }}>🔬</div>
-            <div>
-              <div className="stat-value">{stats.scans}</div>
-              <div className="stat-label">AI Scans Done</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: '#F97316', color: '#fff' }}>⚠️</div>
-            <div>
-              <div className="stat-value" style={{ color: '#EA580C' }}>{stats.alerts}</div>
-              <div className="stat-label">Active Alerts</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: '#0F766E', color: '#fff' }}>💉</div>
-            <div>
-              <div className="stat-value">0</div>
-              <div className="stat-label">Vaccinations Due</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Disease Alert Banner */}
-        <div style={{
-          background: 'rgba(239,68,68,0.05)',
-          border: '1px solid rgba(239,68,68,0.2)',
-          borderRadius: 'var(--radius-md)',
-          padding: '16px',
-          display: 'flex', alignItems: 'center', gap: 12,
-          marginBottom: 20,
-        }}>
-          <div style={{ width: 40, height: 40, borderRadius: 20, background: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <span style={{ fontSize: 20, color: 'white' }}>⚠️</span>
+      {/* Critical Alert banner */}
+      {stats.critical > 0 && (
+        <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#EF4444', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ShieldAlert size={20} color="white" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: '#B91C1C' }}>LSD Disease Alert — Local District</div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>Lumpy Skin Disease cases reported nearby. Vaccinate your herd immediately.</div>
+            <div style={{ fontSize: '15px', fontWeight: 800, color: '#B91C1C' }}>CRITICAL FARM THREAT ACTIVE</div>
+            <div style={{ fontSize: '12px', color: '#7F1D1D', marginTop: '2px' }}>You have {stats.critical} critical disease diagnosis in your herd. Isolate immediately and schedule vaccination.</div>
           </div>
-          <button style={{ background: 'transparent', border: '1px solid #EF4444', color: '#EF4444', borderRadius: 20, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            View Details &gt;
-          </button>
+          <button className="btn btn-danger btn-sm" onClick={() => navigate('/herd')}>Manage Herd</button>
         </div>
+      )}
 
-        {/* Scan Cattle Card */}
-        <div className="scan-card w-full" onClick={() => navigate('/capture')} style={{ background: '#ECFDF5', border: '1px solid #16A34A', boxShadow: 'none' }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(22,163,74,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 24 }}>📸</span>
+      {/* Overview Stats Grid */}
+      <div className="grid-4 mb-6">
+        <div className="stat-card" style={{ background: 'white' }}>
+          <div className="stat-icon" style={{ background: '#E0F2FE', color: '#0369A1' }}>🐄</div>
+          <div>
+            <div className="stat-value">{stats.total}</div>
+            <div className="stat-label">Total Livestock</div>
           </div>
-          <div style={{ textAlign: 'left', flex: 1 }}>
-            <div className="scan-card-title" style={{ color: '#064E3B' }}>Scan Cattle for Disease</div>
-            <div className="scan-card-sub" style={{ color: '#065F46' }}>AI-powered instant diagnosis — Gemini Vision & TFLite ML</div>
-          </div>
-          <button style={{ background: '#0F766E', color: 'white', border: 'none', borderRadius: 20, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            Start Scan &gt;
-          </button>
         </div>
+        <div className="stat-card" style={{ background: 'white' }}>
+          <div className="stat-icon" style={{ background: '#DCFCE7', color: '#16A34A' }}>✓</div>
+          <div>
+            <div className="stat-value" style={{ color: '#16A34A' }}>{stats.healthy}</div>
+            <div className="stat-label">Healthy Herd</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ background: 'white' }}>
+          <div className="stat-icon" style={{ background: '#FEE2E2', color: '#EF4444' }}>⚠️</div>
+          <div>
+            <div className="stat-value" style={{ color: '#EF4444' }}>{stats.attention}</div>
+            <div className="stat-label">Attention Needed</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ background: 'white' }}>
+          <div className="stat-icon" style={{ background: '#FEF9C3', color: '#CA8A04' }}>🔬</div>
+          <div>
+            <div className="stat-value">{recentScans.length}</div>
+            <div className="stat-label">Total Health Scans</div>
+          </div>
+        </div>
+      </div>
 
-        {/* Quick Services */}
-        <div className="mb-4">
-          <div className="section-title">QUICK SERVICES</div>
-          <div className="grid-services" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-            {QUICK_SERVICES.map(s => (
-              <div key={s.path} className="service-tile" onClick={() => navigate(s.path)} style={{ background: '#fff', border: '1px solid var(--border)' }}>
-                <div className="service-icon" style={{ background: 'transparent' }}>
-                  <span style={{ fontSize: 28 }}>{s.icon}</span>
+      {/* Main Grid Section */}
+      <div className="grid-2 mb-6" style={{ gap: '24px' }}>
+        {/* Productivity score gauge */}
+        <div className="card" style={{ background: 'white' }}>
+          <div className="section-title">AI Farm Productivity Index</div>
+          {farmScore ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
+              <div style={{ position: 'relative', width: '120px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ECFDF5', borderRadius: '50%', border: '4px solid #10B981', boxShadow: 'var(--shadow-glow)' }}>
+                <div>
+                  <div style={{ fontSize: '32px', fontWeight: 900, color: '#065F46' }}>{farmScore.score}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>/ 100</div>
                 </div>
-                <div className="service-label" style={{ color: '#0F172A', fontWeight: 600 }}>{s.label}</div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Activity + Health Tip */}
-        <div className="grid-2" style={{ gap: 16 }}>
-          {/* Recent Scans */}
-          <div className="card" style={{ background: '#fff' }}>
-            <div className="section-title">RECENT SCANS</div>
-            {recentScans.length === 0 ? (
-              <div className="empty-state" style={{ padding: '20px 10px' }}>
-                <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.2 }}>📋</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No scans yet.<br/>Use Scan Cattle to get started.</div>
-              </div>
-            ) : recentScans.map((scan, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 20 }}>🐄</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{scan.disease}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(scan.createdAt).toLocaleDateString()}</div>
+              <div style={{ marginTop: '16px', fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>Methodology Rating</div>
+              <p style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '8px', lineHeight: 1.5 }}>
+                {farmScore.suggestion}
+              </p>
+              <div style={{ display: 'flex', gap: '12px', width: '100%', marginTop: '16px' }}>
+                <div style={{ flex: 1, background: '#F8FAFC', padding: '8px', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800 }}>{farmScore.details?.vaccinationScore}/40</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Vaccinations</div>
                 </div>
-                <span className={`badge badge-${scan.riskLevel?.toLowerCase()}`}>{scan.riskLevel}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Weekly Health Tip */}
-          <div className="card" style={{ background: 'rgba(22,163,74,0.05)', border: '1px solid rgba(22,163,74,0.2)' }}>
-            <div className="section-title" style={{ color: '#0F766E' }}>WEEKLY HEALTH TIP</div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
-              <div style={{ width: 28, height: 28, background: '#0F766E', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
-                💡
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', marginBottom: 4 }}>Deworming Schedule Reminder</div>
-                <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.5 }}>
-                  Deworm all cattle every 3 months. Use Albendazole (7.5mg/kg body weight).
+                <div style={{ flex: 1, background: '#F8FAFC', padding: '8px', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800 }}>{farmScore.details?.healthScore}/40</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Health Penalty</div>
+                </div>
+                <div style={{ flex: 1, background: '#F8FAFC', padding: '8px', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800 }}>{farmScore.details?.milkScore}/20</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Productivity</div>
                 </div>
               </div>
             </div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#16A34A', marginTop: 16 }}>Stay Healthy. Protect Your Herd.</div>
+          ) : (
+            <p style={{ color: 'var(--text-muted)', padding: '24px 0' }}>Insufficient data to calculate productivity score.</p>
+          )}
+        </div>
+
+        {/* Dynamic Milk Yield Chart */}
+        <div className="card" style={{ background: 'white' }}>
+          <div className="section-title">Herd Productivity Analysis</div>
+          {animals.length > 0 && animals.some(a => a.milkRecords && a.milkRecords.length > 0) ? (
+            <div style={{ padding: '20px 0' }}>
+              {renderSVGChart()}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🥛</div>
+              <p style={{ fontSize: '12px' }}>No milk production logs available.<br/>Register records in My Herd to populate analytics.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* IoT smart monitor & Digital twin list */}
+      <div className="grid-2 mb-6" style={{ gap: '24px' }}>
+        {/* IoT Monitor preview */}
+        <div className="card" style={{ background: 'white' }}>
+          <div className="flex-between mb-4">
+            <div className="section-title" style={{ margin: 0 }}>IoT Smart Livestock Monitor</div>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/iot')}>Full View &gt;</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {animals.filter(a => a.sensorStatus === 'LIVE').slice(0, 3).map(a => (
+              <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F0FDF4', border: '1px solid #DCFCE7', borderRadius: '12px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22C55E', animation: 'pulse-dot 1.5s infinite' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700 }}>{a.name || 'IoT Collar ID'}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    🌡️ {a.temperature ? `${a.temperature.toFixed(1)}°C` : '38.6°C'} | ❤️ {a.heartRate ? `${a.heartRate.toFixed(0)} bpm` : '72 bpm'}
+                  </div>
+                </div>
+                <span className="badge badge-low">LIVE</span>
+              </div>
+            ))}
+            {animals.filter(a => a.sensorStatus === 'LIVE').length === 0 && (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '32px' }}>📡</span>
+                <p style={{ fontSize: '12px', marginTop: '8px' }}>No active IoT collars linked to your herd.</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Government Footer */}
-        <div style={{
-          marginTop: 24,
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-card)',
-          borderRadius: 'var(--radius-md)',
-          padding: '12px 20px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
-        }}>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>🏛️ Ministry of Fisheries, Animal Husbandry & Dairying</span>
-          <span style={{ color: 'var(--border)' }}>|</span>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>🐄 NDDB</span>
-          <span style={{ color: 'var(--border)' }}>|</span>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>🔬 ICAR</span>
+        {/* Recent Diagnoses */}
+        <div className="card" style={{ background: 'white' }}>
+          <div className="section-title">Recent Scans & Medical Records</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {recentScans.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '32px' }}>📋</span>
+                <p style={{ fontSize: '12px', marginTop: '8px' }}>No diagnoses records logged yet.</p>
+              </div>
+            ) : (
+              recentScans.map((scan) => (
+                <div key={scan.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '20px' }}>🐄</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700 }}>{scan.disease}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{scan.animalName} · {new Date(scan.createdAt).toLocaleDateString()}</div>
+                  </div>
+                  <span className={`badge badge-${(scan.riskLevel || 'LOW').toLowerCase()}`}>{scan.riskLevel || 'LOW'}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Print Health Cert card shortcut */}
+      <div className="card" style={{ background: '#ECFDF5', border: '1px solid #10B981', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <span style={{ fontSize: '32px' }}>📜</span>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '15px', fontWeight: 800, color: '#064E3B' }}>Livestock Health Certificates</div>
+            <div style={{ fontSize: '12px', color: '#065F46', marginTop: '2px' }}>Generate official verifiable PDF certificates for insurance and financing.</div>
+          </div>
+        </div>
+        <button className="btn btn-primary" onClick={() => navigate('/herd')}>Select Animal</button>
       </div>
     </div>
   );
