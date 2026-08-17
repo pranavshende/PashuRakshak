@@ -27,6 +27,14 @@ export const api = {
     }
     return res.json();
   },
+  logout: async () => {
+    const res = await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to logout');
+    return res.json();
+  },
 
   // Animals (Digital Twin & IoT)
   getAnimals: async () => {
@@ -143,6 +151,13 @@ export const api = {
   getFarmNews: async () => {
     const res = await fetch(`${API_BASE_URL}/farm/news`, { headers: getHeaders() });
     if (!res.ok) throw new Error('Failed to load live farm news');
+    return res.json();
+  },
+
+  // Notifications
+  getNotifications: async () => {
+    const res = await fetch(`${API_BASE_URL}/notifications`, { headers: getHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch notifications');
     return res.json();
   }
 };

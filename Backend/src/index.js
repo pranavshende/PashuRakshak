@@ -14,6 +14,7 @@ const chatRoutes = require('./routes/chat');
 const outbreakRoutes = require('./routes/outbreaks');
 const farmRoutes = require('./routes/farm');
 const communityRoutes = require('./routes/community');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/chat', chatRoutes);
 app.use('/outbreaks', outbreakRoutes);
 app.use('/farm', farmRoutes);
 app.use('/community', communityRoutes);
+app.use('/notifications', notificationRoutes);
 
 // Protected Route Example
 app.get('/protected', passport.authenticate('jwt', { session: false }), (req, res) => {

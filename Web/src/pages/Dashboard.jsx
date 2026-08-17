@@ -280,7 +280,7 @@ export default function Dashboard() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '13px', fontWeight: 700 }}>{a.name || 'IoT Collar ID'}</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    🌡️ {a.temperature ? `${a.temperature.toFixed(1)}°C` : '38.6°C'} | ❤️ {a.heartRate ? `${a.heartRate.toFixed(0)} bpm` : '72 bpm'}
+                    🌡️ {a.temperature ? `${a.temperature.toFixed(1)}°C` : '--°C'} | ❤️ {a.heartRate ? `${a.heartRate.toFixed(0)} bpm` : '-- bpm'}
                   </div>
                 </div>
                 <span className="badge badge-low">LIVE</span>

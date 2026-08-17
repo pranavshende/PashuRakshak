@@ -60,6 +60,16 @@ router.post('/login', (req, res, next) => {
       { expiresIn: '30d' }
     );
 
+    // Record login activity
+    prisma.activityLog.create({
+      data: {
+        userId: user.id,
+        action: 'LOGIN',
+        ipAddress: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+        userAgent: req.headers['user-agent']
+      }
+    }).catch(e => console.error('Failed to log login activity:', e));
+
     return res.json({
       token,
       user: {
@@ -136,6 +146,24 @@ router.put('/profile', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Update Profile Error:', error);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// Logout Route
+router.post('/logout', requireAuth, async (req, res) => {
+  try {
+    await prisma.activityLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'LOGOUT',
+        ipAddress: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+        userAgent: req.headers['user-agent']
+      }
+    });
+    res.json({ success: true, message: 'Logged out and activity recorded.' });
+  } catch (error) {
+    console.error('Logout activity logging error:', error);
+    res.status(500).json({ error: 'Failed to record logout activity.' });
   }
 });
 

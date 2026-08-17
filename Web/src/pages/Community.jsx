@@ -10,11 +10,14 @@ export default function Community() {
   const [filter, setFilter] = useState('All');
   const [posts, setPosts] = useState([]);
   const [newPost, setNewPost] = useState('');
-  const [newTags, setNewTags] = useState('');
+  const [newLocation, setNewLocation] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Alerts');
   const [showPostBox, setShowPostBox] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingPostId, setEditingPostId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   
   // Comment states
   const [expandedCommentsPostId, setExpandedCommentsPostId] = useState(null);
@@ -39,16 +42,28 @@ export default function Community() {
   };
 
   const submitPost = async () => {
-    if (!newPost.trim()) return;
+    if (!newPost.trim()) {
+      setErrorMsg('Post content cannot be empty.');
+      return;
+    }
+    setSubmitting(true);
+    setErrorMsg('');
     try {
-      const tags = newTags.split(',').map(t => t.trim()).filter(Boolean);
-      await api.createPost({ text: newPost, tags, location: 'Local Farm' });
+      await api.createPost({
+        text: newPost,
+        tags: [selectedCategory],
+        location: newLocation.trim() || 'Local Farm'
+      });
       setNewPost('');
-      setNewTags('');
+      setNewLocation('');
+      setSelectedCategory('Alerts');
       setShowPostBox(false);
       fetchPosts();
     } catch (e) {
       console.error(e);
+      setErrorMsg('Failed to submit post. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -153,26 +168,66 @@ export default function Community() {
       </div>
 
       <div className="page-content-container">
-        {/* New Post Box */}
+        {/* New Post Modal */}
         {showPostBox && (
-          <div className="card mb-4 animate-fade-in" style={{ background: '#fff' }}>
-            <textarea
-              className="input"
-              style={{ height: 100, marginBottom: 12 }}
-              placeholder="Share a disease alert, tip, or recovery story with the community..."
-              value={newPost}
-              onChange={e => setNewPost(e.target.value)}
-            />
-            <input
-              className="input"
-              style={{ marginBottom: 12 }}
-              placeholder="Tags (comma separated, e.g. Alerts, FMD)"
-              value={newTags}
-              onChange={e => setNewTags(e.target.value)}
-            />
-            <div className="flex-end gap-3">
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowPostBox(false)}>Cancel</button>
-              <button className="btn btn-primary btn-sm" onClick={submitPost}>Post</button>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }} className="animate-fade-in">
+            <div className="card shadow-lg" style={{ width: '90%', maxWidth: '500px', background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+              <div className="flex-between mb-4" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '12px' }}>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>✏️ Share Community Update</span>
+                <button onClick={() => { setShowPostBox(false); setErrorMsg(''); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+              </div>
+
+              {errorMsg && (
+                <div className="mb-3" style={{ color: '#EF4444', fontSize: '12px', background: '#FEF2F2', padding: '8px 12px', borderRadius: '8px', border: '1px solid #FEE2E2' }}>
+                  ⚠️ {errorMsg}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Update Message</label>
+                  <textarea
+                    className="input"
+                    style={{ height: '110px', fontSize: '13px', width: '100%', resize: 'none', padding: '8px 12px' }}
+                    placeholder="Share a disease outbreak, advisory, treatment guide, or recovery story..."
+                    value={newPost}
+                    onChange={e => setNewPost(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
+                    <select
+                      className="input"
+                      style={{ fontSize: '12px', height: '36px', padding: '0 8px', width: '100%', borderRadius: '8px', border: '1px solid var(--border)' }}
+                      value={selectedCategory}
+                      onChange={e => setSelectedCategory(e.target.value)}
+                    >
+                      {CATEGORIES.filter(c => c !== 'All').map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Location</label>
+                    <input
+                      className="input"
+                      style={{ fontSize: '12px', height: '36px', padding: '0 8px', width: '100%', borderRadius: '8px', border: '1px solid var(--border)' }}
+                      placeholder="e.g. Pune, Maharashtra"
+                      value={newLocation}
+                      onChange={e => setNewLocation(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex-end gap-3 mt-4" style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setShowPostBox(false); setErrorMsg(''); }} disabled={submitting}>Cancel</button>
+                  <button className="btn btn-primary btn-sm" onClick={submitPost} disabled={submitting}>
+                    {submitting ? 'Submitting...' : 'Post Update'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

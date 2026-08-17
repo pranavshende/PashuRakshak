@@ -29,6 +29,7 @@ model User {
   communityLikes      CommunityLike[]
   communityComments   CommunityComment[]
   conversations       Conversation[]
+  activityLogs        ActivityLog[]
 }
  
 model Prediction {
@@ -173,3 +174,15 @@ model Message {
   text           String
   createdAt      DateTime @default(now())
 }
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String   // "LOGIN", "LOGOUT"
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
