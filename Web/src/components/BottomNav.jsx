@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Bell, FileText, BookOpen, User } from 'lucide-react';
+import { Home, Activity, Camera, MapPin, Menu } from 'lucide-react';
 
 const NAV_ITEMS = [
   { path: '/dashboard', icon: Home, label: 'Home' },
-  { path: '/alerts', icon: Bell, label: 'Alerts' },
-  { path: '/reports', icon: FileText, label: 'Reports' },
-  { path: '/resources', icon: BookOpen, label: 'Resources' },
-  { path: '/profile', icon: User, label: 'Profile' },
+  { path: '/herd', icon: Activity, label: 'Herd' },
+  { path: '/capture', icon: Camera, label: 'Scan' },
+  { path: '/vets', icon: MapPin, label: 'Vets' },
+  { path: '/settings', icon: Menu, label: 'More' },
 ];
 
 export default function BottomNav() {

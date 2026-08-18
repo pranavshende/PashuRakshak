@@ -74,7 +74,15 @@ router.post('/', requireAuth, async (req, res) => {
 
     if (!conversation) {
       conversation = await prisma.conversation.create({
-        data: { userId: req.user.id, title: 'AI Vet Consultation' }
+        data: { userId: req.user.id, title: 'AI Vet Consultation', introShown: true }
+      });
+    }
+
+    const isFirstMessage = !conversation.introShown;
+    if (isFirstMessage) {
+      await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { introShown: true }
       });
     }
 
@@ -83,18 +91,38 @@ router.post('/', requireAuth, async (req, res) => {
       data: { conversationId: conversation.id, sender: 'user', text: message }
     });
 
+    // Context Retrieval Layer (Tool Simulation)
+    const userAnimals = await prisma.animal.findMany({
+      where: { userId: req.user.id },
+      include: { predictions: { orderBy: { createdAt: 'desc' }, take: 1 } }
+    });
+
+    let contextData = "User's Farm Context:\n";
+    if (userAnimals.length === 0) {
+      contextData += "- No animals currently registered.\n";
+    } else {
+      userAnimals.forEach(animal => {
+        contextData += `- Animal: ${animal.name || 'Unnamed'} (Tag: ${animal.tagId}), Breed: ${animal.breed || 'Unknown'}\n`;
+        if (animal.predictions.length > 0) {
+          contextData += `  - Latest Health Status: ${animal.predictions[0].disease} (${animal.predictions[0].riskLevel} risk)\n`;
+        }
+      });
+    }
+
     let langPrompt = '';
     if (language && language !== 'English') {
-      langPrompt = `\nPlease respond entirely in ${language}.`;
+      langPrompt = `\nCRITICAL: You MUST respond entirely in ${language}. Do not use English.`;
     }
+
+    let introPrompt = isFirstMessage ? "\nIntroduce yourself briefly as the PashuRakshak AI Vet Assistant." : "\nDO NOT introduce yourself. Just answer the question directly.";
 
     let aiText = '';
     if (!process.env.GEMINI_API_KEY) {
-      aiText = `[Mock AI Response in ${language || 'English'}]: I see you are asking about: "${message}". Please provide a GEMINI_API_KEY in the .env file to activate the real AI assistant.`;
+      aiText = `[Mock AI Response in ${language || 'English'}]: I see you are asking about: "${message}". Please provide a GEMINI_API_KEY. Context found: ${userAnimals.length} animals.`;
     } else {
       const response = await ai.models.generateContent({
         model: 'gemini-3.5-flash',
-        contents: SYSTEM_PROMPT + langPrompt + "\n\nUser: " + message,
+        contents: SYSTEM_PROMPT + introPrompt + langPrompt + "\n\n" + contextData + "\n\nUser: " + message,
         config: {
           temperature: 0.2,
         }

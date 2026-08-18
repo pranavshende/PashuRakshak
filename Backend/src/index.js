@@ -15,6 +15,8 @@ const outbreakRoutes = require('./routes/outbreaks');
 const farmRoutes = require('./routes/farm');
 const communityRoutes = require('./routes/community');
 const notificationRoutes = require('./routes/notifications');
+const costCalculatorRoutes = require('./routes/costCalculator');
+const webhookRoutes = require('./routes/webhook');
 
 const app = express();
 
@@ -41,6 +43,8 @@ app.use('/outbreaks', outbreakRoutes);
 app.use('/farm', farmRoutes);
 app.use('/community', communityRoutes);
 app.use('/notifications', notificationRoutes);
+app.use('/cost-calculator', costCalculatorRoutes);
+app.use('/webhook', webhookRoutes);
 
 // Protected Route Example
 app.get('/protected', passport.authenticate('jwt', { session: false }), (req, res) => {

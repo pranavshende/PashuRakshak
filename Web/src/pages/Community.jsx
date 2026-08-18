@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { MessageSquare, ThumbsUp, Trash2, Edit, Save, X } from 'lucide-react';
+import { MessageSquare, ThumbsUp, Trash2, Edit, Save, X, AlertCircle } from 'lucide-react';
+import LoadingSkeleton from '../components/ui/LoadingSkeleton';
+import EmptyState from '../components/ui/EmptyState';
 
 const CATEGORIES = ['All', 'Alerts', 'Tips', 'Recovery', 'Events', 'Marketplace'];
 
@@ -101,7 +103,6 @@ export default function Community() {
   };
 
   const toggleLike = async (id) => {
-    // Optimistic UI update
     setPosts(prev => prev.map(p => 
       p.id === id 
         ? { ...p, userHasLiked: !p.userHasLiked, likes: p.userHasLiked ? p.likes - 1 : p.likes + 1 }
@@ -112,17 +113,15 @@ export default function Community() {
       await api.toggleLike(id);
     } catch (e) {
       console.error(e);
-      fetchPosts(); // Revert on failure
+      fetchPosts(); 
     }
   };
 
-  // Comments handlers
   const handleToggleComments = async (postId) => {
     if (expandedCommentsPostId === postId) {
       setExpandedCommentsPostId(null);
       return;
     }
-
     setExpandedCommentsPostId(postId);
     try {
       const data = await api.getPostComments(postId);
@@ -143,7 +142,6 @@ export default function Community() {
           [postId]: [...(prev[postId] || []), data.comment]
         }));
         setNewCommentText('');
-        // Update comments count on main posts state
         setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: p.comments + 1 } : p));
       }
     } catch (e) {
@@ -154,226 +152,234 @@ export default function Community() {
   };
 
   return (
-    <div className="container animate-fade-in-fast" style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
+    <div className="page-content-container" style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
       
-      {/* Top Header Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      {/* Header Section */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 800 }}>👥 Community Intelligence Feed</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>Connect with farmers — share alerts, tips & recovery stories</p>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 4px 0' }}>Agricultural Portal</h1>
+          <p style={{ color: 'var(--text-sub)', fontSize: '14px', margin: 0 }}>Community intelligence, advisories, and local marketplace.</p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowPostBox(!showPostBox)}>
-          ✏️ Post Update
+        <button className="btn btn-primary" onClick={() => setShowPostBox(!showPostBox)}>
+          New Submission
         </button>
       </div>
 
-      <div className="page-content-container">
-        {/* New Post Modal */}
-        {showPostBox && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }} className="animate-fade-in">
-            <div className="card shadow-lg" style={{ width: '90%', maxWidth: '500px', background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-              <div className="flex-between mb-4" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '12px' }}>
-                <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>✏️ Share Community Update</span>
-                <button onClick={() => { setShowPostBox(false); setErrorMsg(''); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+      {/* New Post Panel */}
+      {showPostBox && (
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '4px', padding: '24px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+            <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)' }}>Submit Information</span>
+            <button onClick={() => { setShowPostBox(false); setErrorMsg(''); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+          </div>
+
+          {errorMsg && (
+            <div style={{ color: 'var(--risk-critical)', fontSize: '13px', background: 'var(--risk-critical-bg)', padding: '12px', borderRadius: '4px', border: '1px solid rgba(217,45,32,0.2)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={16} /> {errorMsg}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)', display: 'block', marginBottom: '8px' }}>Description *</label>
+              <textarea
+                className="input"
+                style={{ height: '100px', minHeight: '100px' }}
+                placeholder="Enter details of your advisory, question, or marketplace listing..."
+                value={newPost}
+                onChange={e => setNewPost(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)', display: 'block', marginBottom: '8px' }}>Category</label>
+                <select
+                  className="input"
+                  value={selectedCategory}
+                  onChange={e => setSelectedCategory(e.target.value)}
+                >
+                  {CATEGORIES.filter(c => c !== 'All').map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
-
-              {errorMsg && (
-                <div className="mb-3" style={{ color: '#EF4444', fontSize: '12px', background: '#FEF2F2', padding: '8px 12px', borderRadius: '8px', border: '1px solid #FEE2E2' }}>
-                  ⚠️ {errorMsg}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Update Message</label>
-                  <textarea
-                    className="input"
-                    style={{ height: '110px', fontSize: '13px', width: '100%', resize: 'none', padding: '8px 12px' }}
-                    placeholder="Share a disease outbreak, advisory, treatment guide, or recovery story..."
-                    value={newPost}
-                    onChange={e => setNewPost(e.target.value)}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Category</label>
-                    <select
-                      className="input"
-                      style={{ fontSize: '12px', height: '36px', padding: '0 8px', width: '100%', borderRadius: '8px', border: '1px solid var(--border)' }}
-                      value={selectedCategory}
-                      onChange={e => setSelectedCategory(e.target.value)}
-                    >
-                      {CATEGORIES.filter(c => c !== 'All').map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Location</label>
-                    <input
-                      className="input"
-                      style={{ fontSize: '12px', height: '36px', padding: '0 8px', width: '100%', borderRadius: '8px', border: '1px solid var(--border)' }}
-                      placeholder="e.g. Pune, Maharashtra"
-                      value={newLocation}
-                      onChange={e => setNewLocation(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex-end gap-3 mt-4" style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setShowPostBox(false); setErrorMsg(''); }} disabled={submitting}>Cancel</button>
-                  <button className="btn btn-primary btn-sm" onClick={submitPost} disabled={submitting}>
-                    {submitting ? 'Submitting...' : 'Post Update'}
-                  </button>
-                </div>
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)', display: 'block', marginBottom: '8px' }}>Location (Optional)</label>
+                <input
+                  className="input"
+                  placeholder="e.g. Pune District"
+                  value={newLocation}
+                  onChange={e => setNewLocation(e.target.value)}
+                />
               </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+              <button className="btn btn-secondary" onClick={() => { setShowPostBox(false); setErrorMsg(''); }} disabled={submitting}>Cancel</button>
+              <button className="btn btn-primary" onClick={submitPost} disabled={submitting}>
+                {submitting ? 'Submitting...' : 'Submit Post'}
+              </button>
             </div>
           </div>
-        )}
-
-        {/* Filter Tabs */}
-        <div className="tab-pills">
-          {CATEGORIES.map(c => (
-            <button key={c} className={`tab-pill${filter === c ? ' active' : ''}`} onClick={() => setFilter(c)}>{c}</button>
-          ))}
         </div>
+      )}
 
-        {/* Posts Feed */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <div className="spinner" style={{ margin: '0 auto 12px' }}></div>
-              Loading feed...
-            </div>
-          ) : posts.length === 0 ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              No community posts found for this category.
-            </div>
-          ) : (
-            posts.map(post => (
-              <div key={post.id} className="card animate-fade-in" style={{ background: '#fff' }}>
-                {/* Header */}
-                <div className="flex-between mb-3">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 20, background: 'linear-gradient(135deg, #16A34A, #0F766E)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                      {post.avatar}
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '16px', marginBottom: '24px' }}>
+        {CATEGORIES.map(c => (
+          <button 
+            key={c} 
+            onClick={() => setFilter(c)}
+            style={{ 
+              padding: '8px 16px', 
+              borderRadius: '4px',
+              border: filter === c ? '1px solid var(--primary)' : '1px solid var(--border)',
+              background: filter === c ? 'var(--primary)' : 'var(--bg-card)', 
+              color: filter === c ? '#fff' : 'var(--text-sub)', 
+              fontWeight: 600, 
+              fontSize: '13px', 
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'var(--transition)'
+            }}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
+      {/* Feed List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {loading ? (
+          <LoadingSkeleton type="card" count={3} />
+        ) : posts.length === 0 ? (
+          <EmptyState title="No records found" description="There are no community posts matching the selected category." />
+        ) : (
+          posts.map(post => (
+            <div key={post.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '4px' }}>
+              
+              {/* Post Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-base)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '4px', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                    {post.avatar || '👤'}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>
+                      {post.user} 
+                      {post.role === 'VET' && <span style={{ color: 'var(--primary)', fontSize: '10px', background: 'var(--primary-light)', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px', fontWeight: 700 }}>CERTIFIED VET</span>}
                     </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>
-                        {post.user} {post.role === 'VET' && <span style={{ color: '#3B82F6', fontSize: 11, background: '#EFF6FF', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>✔️ Vet</span>}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: '2px' }}>
-                        📍 {post.location} · {new Date(post.time).toLocaleDateString()}
-                      </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                      {post.location} • {new Date(post.time).toLocaleDateString()}
                     </div>
                   </div>
-
-                  {/* Actions for Own Post */}
-                  {user && user.id === post.userId && (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button className="btn btn-ghost btn-sm" style={{ padding: '0 8px', border: 'none' }} onClick={() => startEdit(post)}>
-                        <Edit size={14} color="var(--text-muted)" />
-                      </button>
-                      <button className="btn btn-ghost btn-sm" style={{ padding: '0 8px', border: 'none' }} onClick={() => deletePost(post.id)}>
-                        <Trash2 size={14} color="#EF4444" />
-                      </button>
-                    </div>
-                  )}
                 </div>
+                {user && user.id === post.userId && (
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => startEdit(post)}>
+                      <Edit size={16} />
+                    </button>
+                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--risk-critical)' }} onClick={() => deletePost(post.id)}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
 
-                {/* Text Content */}
+              {/* Post Body */}
+              <div style={{ padding: '20px' }}>
                 {editingPostId === post.id ? (
-                  <div style={{ marginBottom: '12px' }}>
+                  <div style={{ marginBottom: '16px' }}>
                     <textarea 
-                      className="input" 
-                      style={{ height: '80px', marginBottom: '8px' }} 
+                      className="input"
+                      style={{ minHeight: '80px' }} 
                       value={editText} 
                       onChange={e => setEditText(e.target.value)} 
                     />
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button className="btn btn-ghost btn-sm" onClick={cancelEdit}><X size={12} /> Cancel</button>
-                      <button className="btn btn-primary btn-sm" onClick={() => saveEdit(post.id)}><Save size={12} /> Save</button>
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                      <button className="btn btn-secondary" onClick={cancelEdit}>Cancel</button>
+                      <button className="btn btn-primary" onClick={() => saveEdit(post.id)}>Save Changes</button>
                     </div>
                   </div>
                 ) : (
-                  <div style={{ fontSize: '14px', color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 12 }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: 1.6, marginBottom: '20px', whiteSpace: 'pre-wrap' }}>
                     {post.text}
                   </div>
                 )}
 
                 {/* Tags */}
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {post.tags?.map(t => (
-                    <span key={t} className="badge badge-primary">#{t}</span>
+                    <span key={t} style={{ fontSize: '11px', fontWeight: 600, color: 'var(--primary-dark)', background: 'var(--primary-light)', border: '1px solid rgba(13,148,136,0.2)', padding: '4px 10px', borderRadius: '4px' }}>
+                      {t}
+                    </span>
                   ))}
                 </div>
-
-                {/* Engagement Actions */}
-                <div style={{ display: 'flex', gap: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                  <button
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: post.userHasLiked ? '#EF4444' : 'var(--text-muted)', fontWeight: 600 }}
-                    onClick={() => toggleLike(post.id)}
-                  >
-                    <ThumbsUp size={14} /> {post.likes} Likes
-                  </button>
-                  <button 
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}
-                    onClick={() => handleToggleComments(post.id)}
-                  >
-                    <MessageSquare size={14} /> {post.comments} Comments
-                  </button>
-                </div>
-
-                {/* Comments Accordion */}
-                {expandedCommentsPostId === post.id && (
-                  <div style={{ marginTop: '16px', background: '#F8FAFC', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }} className="animate-fade-in">
-                    <h5 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-muted)', margin: 0 }}>Comments ({post.comments})</h5>
-                    
-                    {/* Add Comment */}
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <input 
-                        className="input" 
-                        placeholder="Add a public comment..." 
-                        style={{ height: '36px', fontSize: '13px' }} 
-                        value={newCommentText}
-                        onChange={e => setNewCommentText(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && submitComment(post.id)}
-                      />
-                      <button className="btn btn-primary btn-sm" style={{ height: '36px' }} onClick={() => submitComment(post.id)} disabled={!newCommentText.trim() || submittingComment}>
-                        Comment
-                      </button>
-                    </div>
-
-                    {/* Comments List */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
-                      {comments[post.id]?.length === 0 ? (
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>No comments yet.</div>
-                      ) : (
-                        comments[post.id]?.map(c => (
-                          <div key={c.id} style={{ display: 'flex', gap: '10px', borderBottom: '1px solid #ECEFF1', paddingBottom: '8px' }}>
-                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#B0BEC5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>
-                              👤
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-main)' }}>
-                                {c.user} {c.role === 'VET' && <span style={{ color: '#3B82F6', fontSize: '9px' }}>Vet</span>}
-                                <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: '8px', fontSize: '10px' }}>
-                                  {new Date(c.time).toLocaleDateString()}
-                                </span>
-                              </div>
-                              <div style={{ fontSize: '13px', color: 'var(--text-sub)', marginTop: '2px' }}>{c.text}</div>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
-            ))
-          )}
-        </div>
+
+              {/* Action Bar */}
+              <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', gap: '24px', background: 'var(--bg-base)' }}>
+                <button
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: post.userHasLiked ? 'var(--primary)' : 'var(--text-sub)', fontWeight: 600 }}
+                  onClick={() => toggleLike(post.id)}
+                >
+                  <ThumbsUp size={16} /> {post.likes} Useful
+                </button>
+                <button 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-sub)', fontWeight: 600 }}
+                  onClick={() => handleToggleComments(post.id)}
+                >
+                  <MessageSquare size={16} /> {post.comments} Replies
+                </button>
+              </div>
+
+              {/* Comments Section */}
+              {expandedCommentsPostId === post.id && (
+                <div style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
+                  
+                  {/* Comments List */}
+                  <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {comments[post.id]?.length === 0 ? (
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No replies yet. Be the first to answer.</div>
+                    ) : (
+                      comments[post.id]?.map(c => (
+                        <div key={c.id} style={{ display: 'flex', gap: '12px' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '4px', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
+                            👤
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>
+                              {c.user} {c.role === 'VET' && <span style={{ color: 'var(--primary)', fontSize: '10px', marginLeft: '4px' }}>(Vet)</span>}
+                              <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: '8px', fontSize: '12px' }}>
+                                {new Date(c.time).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '14px', color: 'var(--text-sub)', marginTop: '4px', lineHeight: 1.5 }}>{c.text}</div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add Comment */}
+                  <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', display: 'flex', gap: '12px' }}>
+                    <input 
+                      className="input"
+                      placeholder="Add a reply..." 
+                      value={newCommentText}
+                      onChange={e => setNewCommentText(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && submitComment(post.id)}
+                    />
+                    <button className="btn btn-primary" onClick={() => submitComment(post.id)} disabled={!newCommentText.trim() || submittingComment}>
+                      Reply
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

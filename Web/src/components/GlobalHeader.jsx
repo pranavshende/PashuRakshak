@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, User, Shield, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 export default function GlobalHeader() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { t, i18n } = useTranslation();
+  
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(() => {
     try {
@@ -54,24 +58,60 @@ export default function GlobalHeader() {
   const unreadNotifications = notifications.filter(n => !readIds.includes(n.id));
   const unreadCount = unreadNotifications.length;
 
+  const getPageContext = () => {
+    const path = location.pathname.split('/')[1] || 'dashboard';
+    const contextMap = {
+      'dashboard': { title: t('common.dashboard'), sub: 'Overview of your livestock health' },
+      'herd': { title: t('common.animals'), sub: 'Manage your registered livestock' },
+      'capture': { title: t('common.diagnose'), sub: 'AI-powered health scanning' },
+      'medicine': { title: t('common.medicine'), sub: 'Prescriptions and inventory' },
+      'vets': { title: t('common.vets'), sub: 'Nearby veterinary support' },
+      'heatmap': { title: t('common.iot'), sub: 'Live sensor monitoring' },
+      'chat': { title: t('common.aiVet'), sub: 'Intelligent veterinary assistant' },
+      'community': { title: t('common.community'), sub: 'Farmer discussions and alerts' },
+      'settings': { title: t('common.settings'), sub: 'Account and application preferences' }
+    };
+    return contextMap[path] || { title: 'PashuRakshak', sub: '' };
+  };
+
+  const pageContext = getPageContext();
+
   return (
-    <header className="top-header-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '92px', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 105, borderBottom: '1px solid var(--border)' }}>
-      <div className="top-header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
-        <div className="top-header-emblem" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Shield size={24} color="var(--primary-dark)" />
-        </div>
+    <header className="top-header-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '72px', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 105, borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-surface)', padding: '0 32px' }}>
+      <div className="top-header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div className="top-header-text">
-          <div className="top-header-title" style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)' }}>PashuRakshak</div>
-          <div className="top-header-sub" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--primary-dark)' }}>AI Livestock Intelligence Platform</div>
+          <div className="top-header-title">{pageContext.title}</div>
+          {pageContext.sub && <div className="top-header-sub">{pageContext.sub}</div>}
         </div>
       </div>
 
-      <div className="top-header-right" style={{ display: 'flex', alignItems: 'center', gap: '16px', position: 'relative' }}>
+      <div className="top-header-right" style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative' }}>
+        {/* Language Selector */}
+        <select 
+          value={i18n.language} 
+          onChange={(e) => {
+            const lang = e.target.value;
+            i18n.changeLanguage(lang);
+            if (user) {
+              let langName = 'English';
+              if (lang === 'hi') langName = 'Hindi';
+              if (lang === 'mr') langName = 'Marathi';
+              api.updateProfile({ language: langName }).catch(e => console.error('Failed to update language', e));
+            }
+          }}
+          style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '13px', cursor: 'pointer', outline: 'none' }}
+        >
+          <option value="en">English</option>
+          <option value="hi">हिन्दी</option>
+          <option value="mr">मराठी</option>
+        </select>
+
         {/* Notification Bell */}
-        <div className="top-header-icon-btn" style={{ position: 'relative', cursor: 'pointer', padding: '8px', borderRadius: '50%', background: '#F1F5F9' }} onClick={() => setShowDropdown(!showDropdown)}>
-          <Bell size={20} color="#0F172A" />
+        <div className="top-header-icon-btn" style={{ position: 'relative', cursor: 'pointer', padding: '8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setShowDropdown(!showDropdown)}>
+          <Bell size={20} color="var(--text-sub)" />
+          <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-sub)' }} className="hide-mobile">Notifications</span>
           {unreadCount > 0 && (
-            <span className="top-header-badge" style={{ position: 'absolute', top: '2px', right: '2px', background: '#EF4444', color: '#fff', fontSize: '10px', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+            <span className="top-header-badge" style={{ position: 'absolute', top: '2px', left: '16px', background: 'var(--risk-critical)', color: '#fff', fontSize: '10px', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
               {unreadCount}
             </span>
           )}
@@ -79,11 +119,11 @@ export default function GlobalHeader() {
 
         {/* Notifications Dropdown */}
         {showDropdown && (
-          <div className="card shadow-lg" style={{ position: 'absolute', top: '60px', right: '50px', width: '320px', maxHeight: '400px', overflowY: 'auto', zIndex: 120, padding: '16px', backgroundColor: '#fff', border: '1px solid var(--border)', borderRadius: '12px' }}>
-            <div className="flex-between mb-3" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-main)' }}>Notifications</span>
+          <div style={{ position: 'absolute', top: '48px', right: '150px', width: '320px', maxHeight: '400px', overflowY: 'auto', zIndex: 120, padding: '16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '4px', boxShadow: 'var(--shadow)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '12px' }}>
+              <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-main)' }}>{t('settings.notifications')}</span>
               {unreadCount > 0 && (
-                <button onClick={markAllAsRead} style={{ background: 'none', border: 'none', color: 'var(--primary-dark)', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>
+                <button onClick={markAllAsRead} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>
                   Mark all as read
                 </button>
               )}
@@ -98,17 +138,17 @@ export default function GlobalHeader() {
                 No new notifications
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {unreadNotifications.map((notif) => (
-                  <div key={notif.id} className="p-2" style={{ borderRadius: '8px', backgroundColor: notif.severity === 'high' ? 'rgba(239, 68, 68, 0.05)' : '#F8FAFC', borderLeft: notif.severity === 'high' ? '4px solid #EF4444' : '4px solid var(--primary-dark)', padding: '10px' }}>
+                  <div key={notif.id} className="p-2" style={{ borderRadius: '4px', backgroundColor: notif.severity === 'high' ? 'var(--risk-critical-bg)' : 'var(--bg-base)', borderLeft: notif.severity === 'high' ? '3px solid var(--risk-critical)' : '3px solid var(--primary)', padding: '10px' }}>
                     <div className="flex-between" style={{ gap: '8px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-main)' }}>{notif.title}</span>
+                      <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-main)' }}>{notif.title}</span>
                       <button onClick={() => markAsRead(notif.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} title="Mark as read">
                         <Check size={14} />
                       </button>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{notif.message}</div>
-                    <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '6px', textAlign: 'right' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>{notif.message}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'right' }}>
                       {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
@@ -119,13 +159,13 @@ export default function GlobalHeader() {
         )}
 
         {/* User Profile */}
-        <div className="flex-center" style={{ gap: '10px', cursor: 'pointer' }} onClick={() => navigate('/settings')}>
-          <div className="top-header-avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <User size={20} color="#fff" />
+        <div className="flex-center" style={{ gap: '10px', cursor: 'pointer', borderLeft: '1px solid var(--border)', paddingLeft: '24px' }} onClick={() => navigate('/settings')}>
+          <div className="top-header-avatar" style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-base)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {user?.name ? user.name.charAt(0).toUpperCase() : <User size={18} color="var(--secondary)" />}
           </div>
           <div style={{ textAlign: 'left' }} className="user-profile-header">
-            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>{user?.name || 'Farmer'}</div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{user?.role || 'Farmer'}</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>{user?.name || t('dashboard.farmer')}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>{t('settings.profile')}</div>
           </div>
         </div>
       </div>

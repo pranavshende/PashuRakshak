@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef } from 'react';
 import 'react-native-reanimated';
 import * as Sentry from '@sentry/react-native';
+import '../i18n';
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN || 'https://dummy@o0.ingest.sentry.io/0',

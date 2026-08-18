@@ -38,6 +38,22 @@ const AI_MODELS: AIModel[] = [
     color: '#059669',
     badge: 'Local',
     desc: 'TensorFlow Lite model running on your local server'
+  },
+  {
+    id: 'edge',
+    label: 'Thermal Infrared (Edge)',
+    icon: 'thermometer-full',
+    color: '#EF4444',
+    badge: 'Hardware',
+    desc: 'Phase 10: FLIR Thermal Sensor Integration Mockup'
+  },
+  {
+    id: 'nano',
+    label: 'Gemini Nano',
+    icon: 'mobile',
+    color: '#8B5CF6',
+    badge: 'On-Device',
+    desc: 'Offline AI Vision processing directly on phone'
   }
 ];
 
@@ -213,6 +229,54 @@ export default function CaptureScreen() {
             <View style={[styles.corner, styles.cornerTR]} />
             <View style={[styles.corner, styles.cornerBL]} />
             <View style={[styles.corner, styles.cornerBR]} />
+
+            {selectedModel === 'edge' && (
+              <View style={StyleSheet.absoluteFill}>
+                {/* Semi-transparent thermal overlay */}
+                <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(239, 68, 68, 0.25)', zIndex: 2 }} />
+                {/* Hotspot indicator circle */}
+                <View style={{
+                  position: 'absolute',
+                  top: '35%',
+                  left: '35%',
+                  width: 70,
+                  height: 70,
+                  borderRadius: 35,
+                  backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                  borderWidth: 2.5,
+                  borderColor: '#EF4444',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 3,
+                  shadowColor: '#EF4444',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.8,
+                  shadowRadius: 10,
+                  elevation: 5
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>39.8°C</Text>
+                  <Text style={{ color: '#fff', fontSize: 8, fontWeight: '700', marginTop: 2 }}>HOTSPOT</Text>
+                </View>
+                <View style={{
+                  position: 'absolute',
+                  bottom: 12,
+                  left: 12,
+                  right: 12,
+                  backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                  borderRadius: 8,
+                  zIndex: 4,
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: '#EF4444'
+                }}>
+                  <Text style={{ color: '#FEE2E2', fontSize: 10, fontWeight: '800', textAlign: 'center' }}>
+                    ⚠️ THERMAL INFRARED SCAN ACTIVE
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sliders, MapPin, Calendar, AlertCircle } from 'lucide-react';
+import { MapPin, Calendar, AlertCircle } from 'lucide-react';
 import { api } from '../services/api';
+import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 
 const DISEASES = ['All', 'Lumpy Skin Disease', 'FMD', 'Mastitis', 'Blackquarter (BQ)', 'Haemorrhagic Septicaemia'];
 
@@ -31,9 +32,9 @@ export default function Heatmap() {
         scrollWheelZoom: true
       }).setView([19.75, 75.7], 6.5);
 
-      // CartoDB Positron Tile Layer (Premium, light, clean slate aesthetics)
+      // CartoDB Positron Tile Layer
       window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 20
       }).addTo(map);
@@ -49,11 +50,10 @@ export default function Heatmap() {
     };
   }, []);
 
-  // Update Markers when data or showPredictions changes
+  // Update Markers
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
 
-    // Clear previous markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
@@ -64,8 +64,6 @@ export default function Heatmap() {
 
     data.forEach(report => {
       const colors = getColors(report);
-      
-      // Dynamic sizes for high severity/predictions
       const markerSize = showPredictions ? 12 : report.severity === 'High' ? 15 : 10;
 
       const circle = window.L.circleMarker([report.latitude, report.longitude], {
@@ -77,27 +75,20 @@ export default function Heatmap() {
         fillOpacity: 0.4
       }).addTo(map);
 
-      // Styled Tooltip Popup
       circle.bindTooltip(`
-        <div style="font-family: Inter, sans-serif; padding: 4px; font-size: 12px; line-height: 1.4;">
-          <strong style="color: var(--primary-dark);">${report.diseaseName}</strong><br/>
+        <div style="padding: 4px; font-size: 12px; line-height: 1.4;">
+          <strong>${report.diseaseName}</strong><br/>
           <span>Severity: ${report.severity || report.riskLevel || 'Medium'}</span>
         </div>
       `, { direction: 'top', offset: [0, -5] });
 
-      // Click / hover behavior to show info in sidebar
-      circle.on('click', () => {
-        setHoveredReport(report);
-      });
-      circle.on('mouseover', () => {
-        setHoveredReport(report);
-      });
+      circle.on('click', () => setHoveredReport(report));
+      circle.on('mouseover', () => setHoveredReport(report));
 
       markersRef.current.push(circle);
       markerGroup.push([report.latitude, report.longitude]);
     });
 
-    // Auto-fit map viewport boundaries if markers exist
     if (markerGroup.length > 0) {
       try {
         const bounds = window.L.latLngBounds(markerGroup);
@@ -129,219 +120,212 @@ export default function Heatmap() {
   const getColors = (report) => {
     if (showPredictions) {
       const isHigh = report.riskLevel === 'High';
-      return {
-        bg: 'rgba(139, 92, 246, 0.2)',
-        border: isHigh ? '#7C3AED' : '#A78BFA',
-        dot: isHigh ? '#6D28D9' : '#8B5CF6'
-      };
+      return { border: isHigh ? '#7C3AED' : '#A78BFA', dot: isHigh ? '#6D28D9' : '#8B5CF6' };
     }
     
     switch (report.severity) {
       case 'High':
       case 'CRITICAL':
-        return { bg: 'rgba(239, 68, 68, 0.2)', border: '#EF4444', dot: '#DC2626' };
+        return { border: 'var(--risk-critical)', dot: 'var(--risk-critical)' };
       case 'Medium':
       case 'MODERATE':
-        return { bg: 'rgba(245, 158, 11, 0.2)', border: '#F59E0B', dot: '#D97706' };
+        return { border: 'var(--risk-high)', dot: 'var(--risk-high)' };
       default:
-        return { bg: 'rgba(59, 130, 246, 0.2)', border: '#3B82F6', dot: '#2563EB' };
+        return { border: 'var(--primary)', dot: 'var(--primary)' };
     }
   };
 
   return (
     <div className="page-content-container" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       
-      {/* Back button */}
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-        <button onClick={() => navigate('/dashboard')} className="btn btn-ghost" style={{ padding: '0 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <ArrowLeft size={16} /> Back to Dashboard
-        </button>
-      </div>
-
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🗺️ AI Disease Outbreak Surveillance Map
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 4px' }}>
+          AI Disease Outbreak Surveillance Map
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
+        <p style={{ fontSize: '14px', color: 'var(--text-sub)', margin: 0 }}>
           Real-time GIS surveillance visualization, historical clusters, and 14-day predictive hotspot forecasts.
         </p>
       </div>
 
       {/* Control Bar */}
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', marginBottom: '24px', flexWrap: 'wrap', gap: '20px', background: '#fff', border: '1px solid var(--border)', borderRadius: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
-          
-          {/* Toggle Switch */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-            <div style={{ position: 'relative', width: '48px', height: '24px' }}>
-              <input 
-                type="checkbox" 
-                checked={showPredictions} 
-                onChange={e => setShowPredictions(e.target.checked)} 
-                style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
-              />
-              <div style={{ 
-                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                background: showPredictions ? 'var(--primary-dark)' : '#CBD5E1', 
-                borderRadius: '24px', transition: '0.3s' 
-              }}>
-                <div style={{ 
-                  position: 'absolute', top: '2px', left: showPredictions ? '26px' : '2px', 
-                  width: '20px', height: '20px', background: '#fff', borderRadius: '50%', transition: '0.3s' 
-                }} />
-              </div>
-            </div>
-            <span style={{ fontWeight: '700', color: showPredictions ? 'var(--primary-dark)' : 'var(--text-main)', fontSize: '13px' }}>
-              Enable AI 14-Day Forecast Mode
-            </span>
-          </label>
-
-          {/* Disease Filter */}
-          {!showPredictions && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)' }}>Disease Filter:</span>
-              <select 
-                className="input" 
-                style={{ width: '180px', height: '36px', padding: '0 8px', fontSize: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}
-                value={selectedDisease}
-                onChange={e => setSelectedDisease(e.target.value)}
-              >
-                {DISEASES.map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-          )}
+      <div style={{ padding: '16px 20px', marginBottom: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '4px', display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>View Mode:</label>
+          <select 
+            value={showPredictions ? 'forecast' : 'historical'} 
+            onChange={e => setShowPredictions(e.target.value === 'forecast')}
+            style={{ padding: '6px 12px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-base)', outline: 'none' }}
+          >
+            <option value="historical">Historical Surveillance</option>
+            <option value="forecast">14-Day AI Forecast</option>
+          </select>
         </div>
 
-        {/* Time Slider */}
         {!showPredictions && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '340px' }}>
-            <Sliders size={16} color="var(--text-muted)" />
-            <span style={{ fontSize: '13px', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
-              Time Window: <strong style={{ color: 'var(--primary-dark)' }}>{days} Days</strong>
-            </span>
-            <input 
-              type="range" 
-              min="1" 
-              max="365" 
-              value={days} 
-              onChange={e => setDays(e.target.value)} 
-              style={{ flex: 1, cursor: 'pointer', accentColor: 'var(--primary)' }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>Disease Type:</label>
+            <select 
+              style={{ padding: '6px 12px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-base)', outline: 'none' }}
+              value={selectedDisease}
+              onChange={e => setSelectedDisease(e.target.value)}
+            >
+              {DISEASES.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+        )}
+
+        {!showPredictions && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>Time Window:</label>
+            <select 
+              style={{ padding: '6px 12px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-base)', outline: 'none' }}
+              value={days}
+              onChange={e => setDays(Number(e.target.value))}
+            >
+              <option value={7}>Last 7 Days</option>
+              <option value={14}>Last 14 Days</option>
+              <option value={30}>Last 30 Days</option>
+            </select>
           </div>
         )}
       </div>
 
-      {/* Main Layout containing Map + Info Panel */}
       <div style={{ display: 'flex', gap: '24px', flexDirection: 'row', flexWrap: 'wrap' }}>
         
         {/* Visual Map Area */}
-        <div style={{ flex: 2, minWidth: '350px', background: '#F8FAFC', borderRadius: '16px', overflow: 'hidden', height: '520px', position: 'relative', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-          
-          {/* Map canvas node */}
-          <div 
-            ref={mapContainerRef} 
-            style={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }} 
-          />
+        <div style={{ flex: 2, minWidth: '350px', background: 'var(--bg-card)', borderRadius: '4px', overflow: 'hidden', height: '600px', position: 'relative', border: '1px solid var(--border)' }}>
+          <div ref={mapContainerRef} style={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }} />
 
-          {/* Region HUD Overlay */}
-          <div style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(255, 255, 255, 0.9)', border: '1px solid var(--border)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', backdropFilter: 'blur(4px)', zIndex: 10 }}>
-            📍 Live Interactive GIS Map
+          <div style={{ position: 'absolute', top: '16px', left: '16px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', zIndex: 10, boxShadow: 'var(--shadow)' }}>
+            Live Interactive GIS Map
           </div>
 
           {loading && (
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(248, 250, 252, 0.8)', zIndex: 15 }}>
-              <div className="spinner"></div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '12px' }}>Updating GIS surveillance markers...</p>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.8)', zIndex: 15 }}>
+              <LoadingSkeleton type="chart" />
             </div>
           )}
 
           {!loading && data.length === 0 && (
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 15, padding: '24px', textAlign: 'center', background: '#F8FAFC' }}>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 15, background: 'rgba(255, 255, 255, 0.9)' }}>
               <AlertCircle size={40} color="var(--text-muted)" style={{ marginBottom: '12px' }} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-main)' }}>No surveillance data available</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px', maxWidth: '300px' }}>
-                There are no reported outbreak clusters matching the selected filters.
-              </p>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px' }}>No surveillance data available</h3>
+              <p style={{ color: 'var(--text-sub)', fontSize: '13px', margin: 0 }}>There are no reported outbreak clusters matching the selected filters.</p>
             </div>
           )}
         </div>
 
-        {/* Legend / Hover Card Sidebar Panel */}
-        <div style={{ flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Sidebar Panel */}
+        <div style={{ flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Detail display for hovered report */}
-          <div className="card" style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', flex: 1 }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', marginBottom: '14px' }}>
-              Cluster Information
-            </h3>
-            {hoveredReport ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Disease Diagnosis</div>
-                  <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--primary-dark)', marginTop: '2px' }}>{hoveredReport.diseaseName}</div>
-                </div>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Confirmed Cases</div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '2px' }}>{hoveredReport.confirmedCases || 1} Cases</div>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-base)' }}>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>Cluster Information</h3>
+            </div>
+            
+            <div style={{ padding: '20px' }}>
+              {hoveredReport ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: '4px' }}>Disease Diagnosis</div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-main)' }}>{hoveredReport.diseaseName}</div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Severity</div>
-                    <span className={`badge badge-${(hoveredReport.severity || hoveredReport.riskLevel || 'LOW').toLowerCase()}`} style={{ display: 'inline-block', marginTop: '2px' }}>
-                      {hoveredReport.severity || hoveredReport.riskLevel || 'Low'}
-                    </span>
+                  
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: '4px' }}>Cases</div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>{hoveredReport.confirmedCases || 1} Cases</div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: '4px' }}>Severity</div>
+                      <span style={{ 
+                        padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, 
+                        backgroundColor: hoveredReport.severity === 'High' ? 'var(--risk-critical-bg)' : hoveredReport.severity === 'Medium' ? 'var(--risk-high-bg)' : 'var(--risk-low-bg)', 
+                        color: hoveredReport.severity === 'High' ? 'var(--risk-critical)' : hoveredReport.severity === 'Medium' ? 'var(--risk-high)' : 'var(--risk-low)' 
+                      }}>
+                        {hoveredReport.severity || hoveredReport.riskLevel || 'Low'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Location Coordinates</div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                    <MapPin size={12} color="var(--text-muted)" />
-                    {hoveredReport.latitude.toFixed(4)}° N, {hoveredReport.longitude.toFixed(4)}° E
+                  
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: '4px' }}>Location Coordinates</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <MapPin size={14} color="var(--text-muted)" />
+                      {hoveredReport.latitude.toFixed(4)}° N, {hoveredReport.longitude.toFixed(4)}° E
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Reported Time</div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                    <Calendar size={12} color="var(--text-muted)" />
-                    {new Date(hoveredReport.reportedAt || hoveredReport.predictedFor || hoveredReport.createdAt).toLocaleDateString()}
+                  
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: '4px' }}>Reported Time</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={14} color="var(--text-muted)" />
+                      {new Date(hoveredReport.reportedAt || hoveredReport.predictedFor || hoveredReport.createdAt).toLocaleDateString()}
+                    </div>
                   </div>
+
+                  {hoveredReport.weather && (
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px', marginTop: '8px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: '12px' }}>Climate Vector Intel</div>
+                      <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>Temperature</div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>{hoveredReport.weather.temperature}°C</div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>Humidity</div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>{hoveredReport.weather.humidity}%</div>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>Vector Risk Index</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '16px', fontWeight: 700, color: hoveredReport.weather.vectorRiskIndex > 50 ? 'var(--risk-critical)' : 'var(--risk-low)' }}>
+                            {hoveredReport.weather.vectorRiskIndex}
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
+                            {hoveredReport.weather.vectorRiskIndex > 52 ? 'High Insect Spread' : 'Low Activity'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ) : (
-              <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                💡 Click or hover over any map marker to view detailed cluster statistics.
-              </div>
-            )}
+              ) : (
+                <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                  Click or hover over any map marker to view detailed cluster statistics.
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Color Code Legend */}
-          <div className="card" style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', marginBottom: '14px' }}>
-              Map Legend
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#DC2626', border: '1px solid #EF4444' }} />
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>High / Critical Severity</span>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-base)' }}>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>Map Legend</h3>
+            </div>
+            
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--risk-critical)', border: '1px solid var(--risk-critical)' }} />
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-main)' }}>High / Critical Severity</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#D97706', border: '1px solid #F59E0B' }} />
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>Medium / Moderate Severity</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--risk-high)', border: '1px solid var(--risk-high)' }} />
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-main)' }}>Medium / Moderate Severity</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#2563EB', border: '1px solid #3B82F6' }} />
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>Low / Healthy Baseline</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--risk-low)', border: '1px solid var(--risk-low)' }} />
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-main)' }}>Low / Healthy Baseline</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#7C3AED', border: '1px solid #8B5CF6' }} />
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>AI Predictive Hotspots</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#8B5CF6', border: '1px solid #7C3AED' }} />
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-main)' }}>AI Predictive Hotspots</span>
               </div>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );

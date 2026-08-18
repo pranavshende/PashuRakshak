@@ -48,6 +48,27 @@ export default function DiagnoseScreen() {
         } as any);
         formData.append('model', activeModel);
 
+        if (activeModel === 'edge') {
+          // Mock Thermal Scanner returning Mastitis
+          setTimeout(() => {
+            setResult({
+              label: 'Bovine Mastitis (Thermal Hotspot Detected)',
+              confidence: 0.98,
+              riskLevel: 'HIGH RISK',
+              source: 'Hardware Edge FLIR Model',
+              isLivestock: true,
+              symptoms: ['Elevated Udder Temperature (39.8°C)', 'Inflammation Pattern'],
+              recommendation: 'Immediate vet consultation. Isolate the cattle and do not mix milk.',
+              treatment: {
+                medicines: ['Amoxicillin', 'Flunixin Meglumine'],
+                firstAid: 'Cold compress on udder, frequent gentle stripping.'
+              }
+            });
+            setLoading(false);
+          }, 1500);
+          return;
+        }
+
         const response = await fetch(`${API_URL}/predict/analyze?model=${activeModel}`, {
           method: 'POST',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {},
@@ -202,6 +223,73 @@ export default function DiagnoseScreen() {
                     )}
                   </View>
                 )}
+
+                {/* Dynamic Smart Cost Calculator Widget */}
+                {(() => {
+                  const COST_BENEFITS: Record<string, any> = {
+                    'Lumpy Skin Disease': {
+                      earlyStageCost: 1200,
+                      lateStageCost: 18500,
+                      lossAvoided: 17300,
+                      roi: '15.4x'
+                    },
+                    'Foot-and-Mouth Disease': {
+                      earlyStageCost: 800,
+                      lateStageCost: 14500,
+                      lossAvoided: 13700,
+                      roi: '18.1x'
+                    },
+                    'Bovine Mastitis': {
+                      earlyStageCost: 1500,
+                      lateStageCost: 22000,
+                      lossAvoided: 20500,
+                      roi: '14.6x'
+                    }
+                  };
+
+                  let matchedDisease = 'Lumpy Skin Disease';
+                  const labelUpper = (result.label || '').toUpperCase();
+                  if (labelUpper.includes('FMD') || labelUpper.includes('FOOT') || labelUpper.includes('MOUTH')) {
+                    matchedDisease = 'Foot-and-Mouth Disease';
+                  } else if (labelUpper.includes('MASTITIS') || labelUpper.includes('UDDER')) {
+                    matchedDisease = 'Bovine Mastitis';
+                  } else if (labelUpper.includes('HEALTHY') || result.isLivestock === false) {
+                    return null;
+                  }
+
+                  const costInfo = COST_BENEFITS[matchedDisease];
+                  if (!costInfo) return null;
+
+                  return (
+                    <View style={styles.calculatorCard}>
+                      <View style={styles.calcHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <FontAwesome name="calculator" size={16} color="#059669" />
+                          <Text style={styles.calcTitle}>Economic Cost Benefit</Text>
+                        </View>
+                        <Text style={styles.roiBadge}>{costInfo.roi} ROI</Text>
+                      </View>
+                      
+                      <View style={styles.costGrid}>
+                        <View style={[styles.costBox, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' }]}>
+                          <Text style={styles.costLabel}>Early Action</Text>
+                          <Text style={[styles.costVal, { color: '#16A34A' }]}>₹{costInfo.earlyStageCost}</Text>
+                        </View>
+                        <View style={[styles.costBox, { backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }]}>
+                          <Text style={styles.costLabel}>Late Outbreak</Text>
+                          <Text style={[styles.costVal, { color: '#DC2626' }]}>₹{costInfo.lateStageCost}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.savingsBanner}>
+                        <FontAwesome name="check" size={12} color="#065F46" />
+                        <Text style={styles.savingsTxt}>
+                          Net Loss Avoided: <Text style={{ fontWeight: '900' }}>₹{costInfo.lossAvoided}</Text> per cattle.
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })()}
 
                 {/* Action Buttons */}
                 <View style={styles.actionsColumn}>
@@ -525,5 +613,71 @@ const styles = StyleSheet.create({
     fontSize: 13, 
     fontWeight: '800', 
     color: '#FFFFFF' 
+  },
+  calculatorCard: {
+    backgroundColor: '#FFFFFF',
+    padding: SPACING.md,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 10,
+    marginBottom: 8,
+    ...SHADOWS.sm,
+  },
+  calcHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  calcTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  roiBadge: {
+    backgroundColor: '#ECFDF5',
+    color: '#059669',
+    fontSize: 10,
+    fontWeight: '800',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  costGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  costBox: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  costLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#475569',
+    textTransform: 'uppercase',
+  },
+  costVal: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  savingsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    padding: 8,
+    borderRadius: 8,
+  },
+  savingsTxt: {
+    fontSize: 10,
+    color: '#065F46',
+    fontWeight: '700',
   },
 });

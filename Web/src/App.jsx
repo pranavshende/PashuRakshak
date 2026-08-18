@@ -27,11 +27,11 @@ const ProtectedRoute = ({ children }) => {
   if (isLoading) return <LoadingScreen message="Authenticating..." />;
   if (!user) return <Navigate to="/login" replace />;
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={{ display: 'flex' }}>
       <GlobalHeader />
       <Sidebar />
-      <main className="main-content" style={{ paddingTop: '92px' }}>
-        <div className="page-wrapper animate-fade-in-fast">
+      <main className="main-content" style={{ flex: 1, marginLeft: 'var(--sidebar-width)', paddingTop: '64px', minHeight: '100vh', background: 'var(--bg-base)' }}>
+        <div className="page-wrapper animate-fade-in-fast" style={{ height: '100%' }}>
           {children}
         </div>
       </main>

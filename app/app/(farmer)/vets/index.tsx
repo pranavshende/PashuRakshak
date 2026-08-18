@@ -8,147 +8,16 @@ import Animated, { FadeInDown, FadeInRight, FadeInUp } from 'react-native-reanim
 import { storage } from '../../../context/AuthContext';
 import * as Location from 'expo-location';
 
-const FALLBACK_VETS = [
-  {
-    id: 'v1',
-    name: 'Dr. Rajesh Sharma (B.V.Sc & A.H)',
-    clinic: 'Nagpur District Government Veterinary Hospital',
-    phone: '+919823012345',
-    rating: 4.9,
-    available: true,
-    distanceFormat: '1.2 km',
-    latitude: 21.1458,
-    longitude: 79.0882,
-    address: 'Civil Lines, Near Collectorate, Nagpur',
-    specialty: 'Cattle Surgery & Epidemic Prevention'
-  },
-  {
-    id: 'v2',
-    name: 'Dr. Anita Deshmukh (M.V.Sc Medicine)',
-    clinic: 'Zilla Parishad Livestock Dispensary',
-    phone: '+919823056789',
-    rating: 4.8,
-    available: true,
-    distanceFormat: '2.5 km',
-    latitude: 21.1300,
-    longitude: 79.0600,
-    address: 'Sitabuldi Center, Nagpur',
-    specialty: 'Dairy Cattle Nutrition & Health'
-  },
-  {
-    id: 'v3',
-    name: 'Dr. Suresh Patil (Senior Vet Officer)',
-    clinic: 'Pashu Swasthya Kendra & Mobile Clinic',
-    phone: '+919823098765',
-    rating: 4.7,
-    available: true,
-    distanceFormat: '4.1 km',
-    latitude: 21.1600,
-    longitude: 79.1100,
-    address: 'Kamptee Road, Nagpur',
-    specialty: 'Vaccination & General Triage'
-  },
-  {
-    id: 'v4',
-    name: 'Dr. Vinod Gaikwad (B.V.Sc)',
-    clinic: 'Central Cattle Breeding & Polyclinic',
-    phone: '+919823122334',
-    rating: 4.9,
-    available: true,
-    distanceFormat: '5.8 km',
-    latitude: 21.1200,
-    longitude: 79.0500,
-    address: 'Wardha Road, Nagpur',
-    specialty: 'Artificial Insemination & Breeding'
-  },
-  {
-    id: 'v5',
-    name: 'Dr. Meena Kulkarni (M.V.Sc Surgery)',
-    clinic: 'Government Animal Polyclinic Sitabuldi',
-    phone: '+919823233445',
-    rating: 4.8,
-    available: false,
-    distanceFormat: '7.2 km',
-    latitude: 21.1400,
-    longitude: 79.0900,
-    address: 'Main Market, Sitabuldi, Nagpur',
-    specialty: 'Emergency Wound Care & Surgery'
-  },
-  {
-    id: 'v6',
-    name: 'Dr. Ramesh Pawar (B.V.Sc)',
-    clinic: 'Hingna Block Veterinary Hospital',
-    phone: '+919823344556',
-    rating: 4.6,
-    available: true,
-    distanceFormat: '9.4 km',
-    latitude: 21.0800,
-    longitude: 78.9800,
-    address: 'MIDC Road, Hingna, Nagpur',
-    specialty: 'Livestock Infection Control'
-  },
-  {
-    id: 'v7',
-    name: 'Dr. Smita Kamble (LDO Officer)',
-    clinic: 'Kamptee Government Pashu Hospital',
-    phone: '+919823455667',
-    rating: 4.9,
-    available: true,
-    distanceFormat: '11.8 km',
-    latitude: 21.2200,
-    longitude: 79.2000,
-    address: 'Old Cantonment, Kamptee',
-    specialty: 'Foot-and-Mouth Disease Specialist'
-  },
-  {
-    id: 'v8',
-    name: 'Dr. Pravin Shinde (M.V.Sc Gynaecology)',
-    clinic: 'Umred Dairy & Animal Care Center',
-    phone: '+919823566778',
-    rating: 4.7,
-    available: true,
-    distanceFormat: '14.2 km',
-    latitude: 20.8500,
-    longitude: 79.3200,
-    address: 'Tehsil Office Circle, Umred',
-    specialty: 'Maternal Care & Calving Support'
-  },
-  {
-    id: 'v9',
-    name: 'Dr. Sandeep Jadhav (Senior Vet Officer)',
-    clinic: 'Saoner Livestock Protection Center',
-    phone: '+919823677889',
-    rating: 4.8,
-    available: false,
-    distanceFormat: '18.5 km',
-    latitude: 21.3800,
-    longitude: 78.9100,
-    address: 'Chhindwara Road, Saoner',
-    specialty: 'Parasite & Tick Control'
-  },
-  {
-    id: 'v10',
-    name: 'Dr. Sunita Wankhede (B.V.Sc & A.H)',
-    clinic: 'Kalameshwar Regional Veterinary Clinic',
-    phone: '+919823788990',
-    rating: 4.9,
-    available: true,
-    distanceFormat: '22.0 km',
-    latitude: 21.2300,
-    longitude: 78.8800,
-    address: 'Station Road, Kalameshwar',
-    specialty: 'Herbal Medicine & General First-Aid'
-  }
-];
+
+
+import { API_BASE_URL } from '../../../config/api';
 
 export default function VetSearchScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [vets, setVets] = useState<any[]>(FALLBACK_VETS);
+  const [vets, setVets] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-
-  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:5000';
 
   useEffect(() => {
     (async () => {
@@ -164,7 +33,7 @@ export default function VetSearchScreen() {
         }
 
         const token = await storage.getItemAsync('userToken');
-        const response = await fetch(`${API_URL}/vets/nearby?lat=${lat}&lon=${lon}&radius=50000`, {
+        const response = await fetch(`${API_BASE_URL}/vets/nearby?lat=${lat}&lon=${lon}&radius=50000`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         
@@ -181,11 +50,11 @@ export default function VetSearchScreen() {
           }));
           setVets(enrichedVets);
         } else {
-          setVets(FALLBACK_VETS);
+          setVets([]);
         }
       } catch (err) {
-        console.warn('Vets fetch notice: Using verified government veterinary directory.');
-        setVets(FALLBACK_VETS);
+        console.warn('Vets fetch failed, falling back to local storage if available', err);
+        setVets([]);
       } finally {
         setLoading(false);
       }
@@ -217,7 +86,7 @@ export default function VetSearchScreen() {
   );
 
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [selectedMapVet, setSelectedMapVet] = useState<any>(FALLBACK_VETS[0]);
+  const [selectedMapVet, setSelectedMapVet] = useState<any>(null);
   const [isSatellite, setIsSatellite] = useState(false);
 
   return (
@@ -268,8 +137,12 @@ export default function VetSearchScreen() {
             style={[styles.mapCard, isSatellite && { borderColor: '#0284C7' }]}
             activeOpacity={0.9}
             onPress={() => {
-              setSelectedMapVet(filteredVets[0] || FALLBACK_VETS[0]);
-              setIsMapModalOpen(true);
+              if (filteredVets.length > 0) {
+                setSelectedMapVet(filteredVets[0]);
+                setIsMapModalOpen(true);
+              } else {
+                Alert.alert('No Vets', 'No nearby vets available to show on map.');
+              }
             }}
           >
             <View style={styles.mapHeaderRow}>

@@ -1,16 +1,12 @@
-import { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, RotateCcw, Zap, Video, VideoOff, Image, RefreshCw } from 'lucide-react';
-import TopHeaderBanner from '../components/TopHeaderBanner';
-import RiskBadge from '../components/RiskBadge';
-import ConfidenceBar from '../components/ConfidenceBar';
+import { Upload, RotateCcw, Zap, Video, VideoOff, Image, RefreshCw, Cpu, HardDrive } from 'lucide-react';
+import { api } from '../services/api';
 import { API_BASE_URL } from '../config/api';
 
 const MODELS = [
-  { id: 'gemini', label: 'Gemini 2.0 Flash', badge: 'Cloud', badgeCls: 'badge-cloud', icon: '⚡' },
-  { id: 'localml', label: 'Local ML Model', badge: 'Local', badgeCls: 'badge-local', icon: '🖥️' },
-  { id: 'nano', label: 'Gemini Nano', badge: 'On-Device', badgeCls: 'badge-ondevice', icon: '📱' },
-  { id: 'edge', label: 'Edge Rulebook', badge: 'Offline', badgeCls: 'badge-offline', icon: '📖' },
+  { id: 'gemini', label: 'Gemini 2.0 Flash', type: 'Cloud AI', icon: Cpu },
+  { id: 'localml', label: 'Local ML Model', type: 'On-Device', icon: HardDrive },
 ];
 
 export default function Capture() {
@@ -25,7 +21,6 @@ export default function Capture() {
   const [selectedModel, setSelectedModel] = useState('gemini');
   const [dragOver, setDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const navigate = useNavigate();
 
   const startCamera = async () => {
     try {
@@ -47,11 +42,12 @@ export default function Capture() {
 
   const analyzeBlob = async (blob) => {
     setIsAnalyzing(true);
-    setPreviewUrl(URL.createObjectURL(blob));
+    if (blob) setPreviewUrl(URL.createObjectURL(blob));
     try {
       const token = localStorage.getItem('userToken');
       const formData = new FormData();
-      formData.append('file', blob, 'cattle.jpg');
+      formData.append('file', blob || await fetch(previewUrl).then(r => r.blob()), 'cattle.jpg');
+      
       const res = await fetch(`${API_BASE_URL}/predict/analyze?model=${selectedModel}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -81,201 +77,195 @@ export default function Capture() {
 
   const handleFileChange = (file) => {
     if (!file || !file.type.startsWith('image/')) return;
-    analyzeBlob(file);
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
   const handleDrop = useCallback((e) => {
     e.preventDefault(); setDragOver(false);
     handleFileChange(e.dataTransfer.files[0]);
-  }, [selectedModel]);
+  }, []);
 
   const reset = () => { setResult(null); setPreviewUrl(null); setCameraActive(false); stopCamera(); };
 
   return (
-    <div>
-      <TopHeaderBanner title="AI Disease Scanner" subtitle="Scan cattle for instant AI-powered diagnosis" />
+    <div className="page-content-container" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      
+      {/* Header Section */}
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 4px' }}>AI Health Scan</h1>
+        <p style={{ fontSize: '14px', color: 'var(--text-sub)', margin: 0 }}>Capture or upload images of your livestock for an instant medical assessment.</p>
+      </div>
 
-      <div className="page-content-container">
-        {/* Model Selector */}
-        <div className="card mb-4">
-          <div className="section-title">Select AI Model</div>
-          <div className="model-selector">
-            {MODELS.map(m => (
-              <button
-                key={m.id}
-                className={`model-option${selectedModel === m.id ? ' active' : ''}`}
-                onClick={() => setSelectedModel(m.id)}
+      {/* Model Selection */}
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        {MODELS.map(m => (
+          <div 
+            key={m.id} 
+            onClick={() => setSelectedModel(m.id)}
+            style={{ flex: 1, minWidth: '250px', background: selectedModel === m.id ? 'var(--primary-light)' : 'var(--bg-card)', border: selectedModel === m.id ? '2px solid var(--primary)' : '1px solid var(--border)', borderRadius: '4px', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'var(--transition)' }}
+          >
+            <div style={{ background: selectedModel === m.id ? 'var(--primary)' : 'var(--bg-base)', color: selectedModel === m.id ? '#fff' : 'var(--text-sub)', width: '40px', height: '40px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <m.icon size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: selectedModel === m.id ? 'var(--primary-dark)' : 'var(--text-main)' }}>{m.label}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>{m.type} processing</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', alignItems: 'start' }}>
+        
+        {/* Left: Input (Camera/Upload) */}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-base)' }}>
+            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>Image Source</h3>
+          </div>
+
+          <div style={{ padding: '24px' }}>
+            {cameraActive ? (
+              <div style={{ position: 'relative', width: '100%', height: '350px', background: '#000', borderRadius: '4px', overflow: 'hidden' }}>
+                <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '80%', height: '80%', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px' }}>
+                  <div className="scanner-corner" style={{ position: 'absolute', top: -2, left: -2, width: 20, height: 20, borderTop: '4px solid #fff', borderLeft: '4px solid #fff' }} />
+                  <div className="scanner-corner" style={{ position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderTop: '4px solid #fff', borderRight: '4px solid #fff' }} />
+                  <div className="scanner-corner" style={{ position: 'absolute', bottom: -2, left: -2, width: 20, height: 20, borderBottom: '4px solid #fff', borderLeft: '4px solid #fff' }} />
+                  <div className="scanner-corner" style={{ position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderBottom: '4px solid #fff', borderRight: '4px solid #fff' }} />
+                </div>
+              </div>
+            ) : previewUrl ? (
+              <div style={{ width: '100%', height: '350px', background: '#000', borderRadius: '4px', overflow: 'hidden' }}>
+                <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ) : (
+              <div 
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileRef.current?.click()}
+                style={{ width: '100%', height: '350px', background: dragOver ? 'var(--primary-light)' : 'var(--bg-base)', border: dragOver ? '2px dashed var(--primary)' : '2px dashed var(--border)', borderRadius: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'var(--transition)' }}
               >
-                <span>{m.icon}</span>
-                <span>{m.label}</span>
-                <span className={`badge ${m.badgeCls}`}>{m.badge}</span>
-              </button>
-            ))}
+                <Upload size={40} color="var(--text-muted)" style={{ marginBottom: '16px' }} />
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>Click or drag image to upload</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '8px' }}>Supports JPG, PNG (Max 5MB)</div>
+              </div>
+            )}
+
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleFileChange(e.target.files[0])} />
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              {cameraActive ? (
+                <button onClick={takePicture} className="btn btn-primary" style={{ flex: 1 }}>
+                  <Zap size={16} /> Capture & Analyze
+                </button>
+              ) : previewUrl && !result ? (
+                <button onClick={() => analyzeBlob(null)} className="btn btn-primary" style={{ flex: 1 }} disabled={isAnalyzing}>
+                  {isAnalyzing ? 'Analyzing...' : <><Zap size={16} /> Analyze Image</>}
+                </button>
+              ) : (
+                <button onClick={startCamera} className="btn btn-primary" style={{ flex: 1 }}>
+                  <Video size={16} /> Start Camera
+                </button>
+              )}
+
+              {(previewUrl || cameraActive) && (
+                <button onClick={reset} className="btn btn-secondary">
+                  <RefreshCw size={16} /> Reset
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="grid-2" style={{ gap: 24, alignItems: 'start' }}>
-          {/* Left: Camera / Upload */}
-          <div>
-            {!result && (
-              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                {/* Camera View */}
-                <div className="camera-wrapper" style={{ borderRadius: 0 }}>
-                  {cameraActive ? (
-                    <>
-                      <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      <div className="scanner-overlay">
-                        <div className="scanner-frame">
-                          <div className="scan-line" />
-                          <div className="scanner-corner tl" />
-                          <div className="scanner-corner tr" />
-                          <div className="scanner-corner bl" />
-                          <div className="scanner-corner br" />
-                        </div>
-                      </div>
-                    </>
-                  ) : previewUrl ? (
-                    <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                  ) : (
-                    <div
-                      className={`drop-zone${dragOver ? ' drag-over' : ''}`}
-                      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                      onDragLeave={() => setDragOver(false)}
-                      onDrop={handleDrop}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      <Upload size={32} className="mb-2" style={{ opacity: 0.5 }} />
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-sub)' }}>Capture or Upload Cattle Image</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Drag & drop or click to choose file</div>
-                    </div>
-                  )}
-                  <canvas ref={canvasRef} style={{ display: 'none' }} />
-                </div>
-
-                {/* Controls */}
-                <div style={{ padding: 20, display: 'flex', gap: 10, background: '#fff', borderTop: '1px solid var(--border)' }}>
-                  <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleFileChange(e.target.files[0])} />
-                  
-                  {cameraActive ? (
-                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={stopCamera}>
-                      <VideoOff size={16} /> Stop Camera
-                    </button>
-                  ) : (
-                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={startCamera}>
-                      <Video size={16} /> Use Live Camera
-                    </button>
-                  )}
-
-                  <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => fileRef.current?.click()}>
-                    <Image size={16} /> Choose Image
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {previewUrl && !isAnalyzing && (
-              <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                {!result && (
-                  <>
-                    <button className="btn btn-primary" style={{ flex: 2 }} onClick={() => analyzeBlob(null)}>
-                      {isAnalyzing ? '⏳ Analyzing...' : <><Zap size={16} /> Capture & Analyze</>}
-                    </button>
-                    <button className="btn btn-ghost" style={{ flex: 1 }} onClick={reset}>Reset</button>
-                  </>
-                )}
-                {result && (
-                  <button className="btn btn-secondary w-full" onClick={reset}>
-                    <RefreshCw size={16} /> Scan Another Animal
-                  </button>
-                )}
-              </div>
-            )}
+        {/* Right: Analysis Results */}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '4px', overflow: 'hidden', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-base)' }}>
+            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>Diagnostic Assessment</h3>
           </div>
 
-          {/* Right: Results / Loading */}
-          <div>
-            {isAnalyzing && (
-              <div className="card flex-center" style={{ minHeight: 300, flexDirection: 'column', gap: 16 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 22, border: '3px solid var(--border)', borderTopColor: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-sub)' }}>Gemini AI Model is analyzing image...</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 260 }}>
-                  Detecting skin patterns, lesions, and lumpy nodules using Gemini Pro Vision
-                </div>
+          <div style={{ flex: 1, padding: '24px' }}>
+            {isAnalyzing ? (
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '40px', height: '40px', border: '3px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>AI is analyzing the image...</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '8px', textAlign: 'center' }}>Scanning for lesions, skin anomalies, and visible symptoms.</div>
               </div>
-            )}
-
-            {result && (
-              <div className="card animate-fade-in" style={{ padding: 24 }}>
-                <div className="flex-between mb-4 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+            ) : result ? (
+              <div className="animate-fade-in">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>AI Diagnosis Result</div>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: result.riskLevel === 'Healthy' ? 'var(--primary)' : 'var(--error)', marginTop: 4 }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: '4px' }}>Diagnosis Result</div>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: result.riskLevel === 'Healthy' ? 'var(--risk-low)' : 'var(--risk-critical)' }}>
                       {result.label}
                     </div>
                   </div>
-                  <RiskBadge level={result.riskLevel} />
+                  <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, backgroundColor: result.riskLevel === 'Healthy' ? 'var(--risk-low-bg)' : 'var(--risk-critical-bg)', color: result.riskLevel === 'Healthy' ? 'var(--risk-low)' : 'var(--risk-critical)' }}>
+                    {result.riskLevel}
+                  </span>
                 </div>
 
-                <div className="diagnosis-section">
-                  <div className="diagnosis-section-title">📊 Confidence Score</div>
-                  <ConfidenceBar value={result.confidence} />
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>AI Confidence</span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)' }}>{Math.round(result.confidence * 100)}%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '8px', background: 'var(--bg-base)', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: 'var(--primary)', width: `${result.confidence * 100}%` }} />
+                  </div>
                 </div>
 
-                {/* Symptoms */}
-                {result.symptoms && (
-                  <div className="diagnosis-section">
-                    <div className="diagnosis-section-title">🔍 Identified Symptoms</div>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {result.symptoms && result.symptoms.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: '8px' }}>Detected Symptoms</h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {result.symptoms.map((s, i) => (
-                        <span key={i} className="badge badge-secondary" style={{ fontSize: 11, padding: '4px 10px' }}>{s}</span>
+                        <span key={i} style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: '4px', fontSize: '12px', color: 'var(--text-main)' }}>{s}</span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Treatment */}
                 {result.treatment && (
-                  <div className="diagnosis-section">
-                    <div className="diagnosis-section-title">💊 Treatment Plan</div>
-                    {result.treatment.medicines?.map((m, i) => (
-                      <div key={i} className="medicine-item">
-                        <span>💊</span> {m}
+                  <div>
+                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: '12px' }}>Treatment Plan</h4>
+                    
+                    {result.treatment.medicines && result.treatment.medicines.length > 0 && (
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>Medicines</div>
+                        <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
+                          {result.treatment.medicines.map((m, i) => <li key={i}>{m}</li>)}
+                        </ul>
                       </div>
-                    ))}
+                    )}
+                    
                     {result.treatment.firstAid && (
-                      <div style={{ marginTop: 10 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>🩹 First Aid</div>
-                        <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{result.treatment.firstAid}</div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>First Aid</div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-sub)', lineHeight: 1.6 }}>{result.treatment.firstAid}</div>
                       </div>
                     )}
-                    {result.treatment.prevention && (
-                      <div style={{ marginTop: 10 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>🛡️ Prevention</div>
-                        <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{result.treatment.prevention}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
 
-                {/* Source Badge */}
-                {result.source && (
-                  <div className="diagnosis-section" style={{ borderTop: '1px solid var(--border)' }}>
-                    <span className="source-badge">🤖 {result.source}</span>
+                    {result.treatment.prevention && (
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>Prevention</div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-sub)', lineHeight: 1.6 }}>{result.treatment.prevention}</div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-
-            {!result && !isAnalyzing && (
-              <div className="card flex-center" style={{ minHeight: 300, flexDirection: 'column', gap: 12 }}>
-                <div style={{ fontSize: 48, opacity: 0.3 }}>🔬</div>
-                <div style={{ fontSize: 14, color: 'var(--text-muted)', textAlign: 'center' }}>
-                  Capture or upload a cattle photo to get AI diagnosis
-                </div>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', opacity: 0.5 }}>
+                <Cpu size={48} color="var(--text-muted)" style={{ marginBottom: '16px' }} />
+                <div style={{ fontSize: '14px', color: 'var(--text-main)', fontWeight: 500 }}>No Analysis Data</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '8px' }}>Capture or upload an image to view diagnostic results here.</div>
               </div>
             )}
           </div>
         </div>
+
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import TopHeaderBanner from '../../../components/TopHeaderBanner';
 import Animated, { FadeInDown, FadeInRight, FadeInUp } from 'react-native-reanimated';
 import { storage } from '../../../context/AuthContext';
 import * as Location from 'expo-location';
+import { simulateBluetoothMeshBroadcast } from '../../../utils/simulatedMesh';
 
 // Dynamically import MapView for native platforms to avoid bundle crashes on web and Expo Go environments
 let MapView: any = null;
@@ -259,6 +260,27 @@ export default function CommunityNetworkScreen() {
               <Text style={styles.threatDesc}>Active disease clusters reported in Nagpur district. Tap to view on Map.</Text>
             </View>
             <FontAwesome name="external-link" size={16} color="rgba(255,255,255,0.8)" style={{ marginLeft: 8 }} />
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Mesh Network Simulation Button */}
+        <Animated.View entering={FadeInDown.delay(100).springify()}>
+          <TouchableOpacity 
+            style={[styles.threatBanner, { backgroundColor: '#8B5CF6', marginBottom: SPACING.md }]}
+            onPress={async () => {
+              Alert.alert("Simulating Broadcast", "Broadcasting peer-to-peer outbreak alert via Bluetooth Low Energy (BLE)...");
+              await simulateBluetoothMeshBroadcast('Lumpy Skin Disease');
+            }}
+            activeOpacity={0.9}
+          >
+            <View style={[styles.threatIconWrapper, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+              <FontAwesome name="bluetooth-b" size={20} color="#fff" />
+            </View>
+            <View style={styles.threatInfo}>
+              <Text style={styles.threatTitle}>SIMULATE MESH BROADCAST</Text>
+              <Text style={styles.threatDesc}>Trigger offline P2P community alert relay over BLE.</Text>
+            </View>
+            <FontAwesome name="rss" size={16} color="rgba(255,255,255,0.8)" style={{ marginLeft: 8 }} />
           </TouchableOpacity>
         </Animated.View>
 

@@ -55,26 +55,43 @@ router.get('/historical', async (req, res) => {
   }
 });
 
+const { getClimateRisk } = require('../services/weatherService');
+
 // Predict future outbreak hotspots (7-14 days)
 router.get('/predict', async (req, res) => {
   try {
-    // In a real scenario, this would call a sophisticated ML model with weather & density data.
-    // For now, we simulate predictions based on current clusters.
-    
     const recentReports = await prisma.diseaseReport.findMany({
       where: {
-        reportedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
+        reportedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Increase search window to last 30 days for better demo density
       }
     });
 
-    // Mock predictive algorithm: Shift hotspots slightly based on simulated wind/migration
-    const predictions = recentReports.map(report => ({
-      ...report,
-      id: `pred_${report.id}`,
-      latitude: report.latitude + (Math.random() * 0.02 - 0.01),
-      longitude: report.longitude + (Math.random() * 0.02 - 0.01),
-      riskLevel: Math.random() > 0.7 ? 'High' : 'Medium',
-      predictedFor: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days in future
+    // Resolve weather risks asynchronously for each coordinate hotspot
+    const predictions = await Promise.all(recentReports.map(async (report) => {
+      const predLat = report.latitude + (Math.random() * 0.06 - 0.03);
+      const predLon = report.longitude + (Math.random() * 0.06 - 0.03);
+      
+      const weather = await getClimateRisk(predLat, predLon);
+      
+      // Categorize risk based on temperature + humidity index
+      let calcRisk = 'Medium';
+      if (weather.vectorRiskIndex > 52) {
+        calcRisk = 'High';
+      } else if (weather.vectorRiskIndex < 44) {
+        calcRisk = 'Low';
+      }
+
+      return {
+        id: `pred_${report.id}`,
+        diseaseName: report.diseaseName,
+        latitude: predLat,
+        longitude: predLon,
+        severity: report.severity,
+        reportedAt: report.reportedAt,
+        riskLevel: calcRisk,
+        weather,
+        predictedFor: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      };
     }));
 
     res.json({ data: predictions });
