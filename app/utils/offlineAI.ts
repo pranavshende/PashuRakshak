@@ -26,19 +26,17 @@ export async function runOfflineGeminiDiagnosis(imageUri: string): Promise<Offli
   await new Promise(resolve => setTimeout(resolve, 400));
 
   const lowerUri = (imageUri || '').toLowerCase();
+  const filename = lowerUri.split('/').pop() || '';
   
   // Heuristic inspection: Detect non-cattle objects (laptop, screen, keyboard, room, camera test photos)
   const isNonCattleImage = 
-    lowerUri.includes('laptop') || 
-    lowerUri.includes('keyboard') || 
-    lowerUri.includes('screen') || 
-    lowerUri.includes('monitor') || 
-    lowerUri.includes('desktop') ||
-    lowerUri.includes('room') ||
-    lowerUri.includes('test') ||
-    lowerUri.includes('photo') ||
-    lowerUri.includes('picker') ||
-    lowerUri.includes('cache');
+    filename.includes('laptop') || 
+    filename.includes('keyboard') || 
+    filename.includes('screen') || 
+    filename.includes('monitor') || 
+    filename.includes('desktop') ||
+    filename.includes('room') ||
+    filename.includes('test');
 
   if (isNonCattleImage) {
     return {

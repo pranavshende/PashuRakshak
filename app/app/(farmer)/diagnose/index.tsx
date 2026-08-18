@@ -95,7 +95,7 @@ export default function DiagnoseScreen() {
     };
 
     analyzeImage();
-  }, [imageUri]);
+  }, [imageUri, activeModel]);
 
   const isNonLivestock = result && result.isLivestock === false;
 
