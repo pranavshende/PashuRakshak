@@ -5,13 +5,15 @@ import { useAuth } from '../../context/AuthContext';
 import TopHeaderBanner from '../../components/TopHeaderBanner';
 import { COLORS, SPACING, SIZES, SHADOWS } from '../../constants/theme';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.container}>
-      <TopHeaderBanner title="Farmer Profile" subtitle="Account details & farm information" />
+      <TopHeaderBanner title={t('profile.title', 'Farmer Profile')} subtitle={t('profile.subtitle', 'Account details & farm information')} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         
@@ -22,12 +24,12 @@ export default function ProfileScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.profileNameSlim}>{user?.name || 'Pranav Shende'}</Text>
-            <Text style={styles.profileRoleSlim}>Registered Dairy & Livestock Farmer</Text>
+            <Text style={styles.profileRoleSlim}>{t('profile.farmInfo', 'Registered Dairy & Livestock Farmer')}</Text>
 
             <View style={styles.badgeRowSlim}>
               <View style={styles.badgeGreenSlim}>
                 <FontAwesome name="check-circle" size={10} color="#059669" />
-                <Text style={styles.badgeGreenTxtSlim}>Verified Farmer</Text>
+                <Text style={styles.badgeGreenTxtSlim}>{t('profile.verified', 'Verified Farmer')}</Text>
               </View>
               <View style={styles.badgeBlueSlim}>
                 <FontAwesome name="shield" size={10} color="#0284C7" />
@@ -39,13 +41,13 @@ export default function ProfileScreen() {
 
         {/* Account Details Slim Card */}
         <Animated.View entering={FadeInUp.duration(500).delay(100).springify()} style={styles.sectionSlimCard}>
-          <Text style={styles.sectionTitleSlim}>Account & Farm Info</Text>
+          <Text style={styles.sectionTitleSlim}>{t('profile.personalInfo', 'Account & Farm Info')}</Text>
 
           <View style={styles.infoSlimRow}>
             <View style={styles.infoIconCircle}>
               <FontAwesome name="phone" size={13} color="#059669" />
             </View>
-            <Text style={styles.infoLabelSlim}>Phone Number:</Text>
+            <Text style={styles.infoLabelSlim}>{t('profile.contactNo', 'Phone Number:')}</Text>
             <Text style={styles.infoValueSlim}>+91 98765 43210</Text>
           </View>
 
@@ -53,7 +55,7 @@ export default function ProfileScreen() {
             <View style={styles.infoIconCircle}>
               <FontAwesome name="envelope" size={12} color="#059669" />
             </View>
-            <Text style={styles.infoLabelSlim}>Email:</Text>
+            <Text style={styles.infoLabelSlim}>{t('profile.email', 'Email:')}</Text>
             <Text style={styles.infoValueSlim}>{user?.email || 'farmer@pashurakshak.gov.in'}</Text>
           </View>
 
@@ -61,7 +63,7 @@ export default function ProfileScreen() {
             <View style={styles.infoIconCircle}>
               <FontAwesome name="map-marker" size={13} color="#059669" />
             </View>
-            <Text style={styles.infoLabelSlim}>District:</Text>
+            <Text style={styles.infoLabelSlim}>{t('profile.district', 'District:')}</Text>
             <Text style={styles.infoValueSlim}>Nagpur, Maharashtra</Text>
           </View>
 
@@ -69,7 +71,7 @@ export default function ProfileScreen() {
             <View style={styles.infoIconCircle}>
               <FontAwesome name="paw" size={13} color="#059669" />
             </View>
-            <Text style={styles.infoLabelSlim}>Registered Herd:</Text>
+            <Text style={styles.infoLabelSlim}>{t('terminology.herd', 'Registered Herd:')}</Text>
             <Text style={styles.infoValueSlim}>14 Cattle (Gir & Sahiwal)</Text>
           </View>
         </Animated.View>
@@ -78,7 +80,7 @@ export default function ProfileScreen() {
         <Animated.View entering={FadeInUp.duration(500).delay(200).springify()}>
           <TouchableOpacity style={styles.logoutSlimBtn} activeOpacity={0.8} onPress={logout}>
             <FontAwesome name="sign-out" size={14} color="#DC2626" />
-            <Text style={styles.logoutTxtSlim}>Sign Out of Account</Text>
+            <Text style={styles.logoutTxtSlim}>{t('profile.logout', 'Sign Out of Account')}</Text>
           </TouchableOpacity>
         </Animated.View>
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
@@ -8,8 +8,66 @@ import { useRouter } from 'expo-router';
 import { storage } from '../../context/AuthContext';
 import { Audio } from 'expo-av';
 import Animated, { FadeInUp, FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, cancelAnimation } from 'react-native-reanimated';
+import { API_BASE_URL } from '../../config/api';
+import { useTranslation } from 'react-i18next';
+
+const SUGGESTIONS = [
+  'What are the signs of Lumpy Skin Disease?',
+  'How to treat FMD in cattle?',
+  'Best vaccination schedule for calves?',
+  'How to prevent mastitis?',
+];
+
+const WELCOME_MESSAGE = `Namaste! I am the **PashuRakshak AI Veterinary Assistant**. I am here to help you care for your livestock.
+
+I can assist you with:
+* Identifying symptoms of illness.
+* Providing first-aid advice.
+* Explaining diseases like Lumpy Skin Disease (LSD), Foot and Mouth Disease (FMD), and Mastitis.
+
+Please describe any symptoms you are noticing.
+
+*(Note: For serious conditions, always consult your local veterinary officer immediately.)*`;
+
+const MarkdownText = ({ text, style }: { text: string, style?: any }) => {
+  const parseLine = (line: string, index: number) => {
+    const parts = line.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+    return (
+      <Text key={index} style={style}>
+        {parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <Text key={i} style={[style, { fontWeight: 'bold' }]}>{part.slice(2, -2)}</Text>;
+          }
+          if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+            return <Text key={i} style={[style, { fontStyle: 'italic' }]}>{part.slice(1, -1)}</Text>;
+          }
+          return part;
+        })}
+      </Text>
+    );
+  };
+
+  const lines = (text || '').split('\n');
+  return (
+    <View>
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+          return (
+            <View key={idx} style={{ flexDirection: 'row', paddingLeft: 16, marginBottom: 4 }}>
+              <Text style={[style, { marginRight: 8 }]}>•</Text>
+              <View style={{ flex: 1 }}>{parseLine(trimmed.substring(2), idx)}</View>
+            </View>
+          );
+        }
+        return <View key={idx} style={{ marginBottom: 4 }}>{parseLine(line, idx)}</View>;
+      })}
+    </View>
+  );
+};
 
 export default function ChatScreen() {
+  const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   
   useEffect(() => {
@@ -21,19 +79,78 @@ export default function ChatScreen() {
     };
   }, []);
 
-  const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string, id: string, isCard?: boolean}[]>([
-    { role: 'ai', text: 'Hello! I am your AI Veterinary Assistant. Describe your livestock\'s symptoms or ask me for first-aid advice.', id: 'msg-0' }
-  ]);
+  const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string, id: string, isCard?: boolean}[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [language, setLanguage] = useState('English');
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   
   const pulseScale = useSharedValue(1);
-
   const recordingRef = useRef<Audio.Recording | null>(null);
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const token = await storage.getItemAsync('userToken');
+      const res = await fetch(`${API_BASE_URL}/chat/history`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.conversation && data.conversation.messages.length > 0) {
+        const mappedMessages = data.conversation.messages.map((m: any) => ({
+          role: m.sender === 'user' ? 'user' : 'ai',
+          text: m.text,
+          id: m.id || Math.random().toString()
+        }));
+        setMessages(mappedMessages);
+      } else {
+        setMessages([{ role: 'ai', text: WELCOME_MESSAGE, id: 'msg-welcome' }]);
+      }
+    } catch (e) {
+      console.error(e);
+      setMessages([{ role: 'ai', text: WELCOME_MESSAGE, id: 'msg-welcome' }]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleNewSession = () => {
+    Alert.alert(
+      "New Consultation",
+      "Are you sure you want to start a new consultation? This will clear current session history.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Start New", 
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const token = await storage.getItemAsync('userToken');
+              const res = await fetch(`${API_BASE_URL}/chat/clear`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (res.ok) {
+                setMessages([{ role: 'ai', text: WELCOME_MESSAGE, id: 'msg-welcome' }]);
+              }
+            } catch (e) {
+              console.error(e);
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const startRecording = async () => {
     try {
@@ -97,7 +214,6 @@ export default function ChatScreen() {
     setMessages(prev => [...prev, { role: 'user', text: "🎤 Processing audio...", id: userMsgId }]);
 
     try {
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:5000';
       const token = await storage.getItemAsync('userToken');
 
       const formData = new FormData();
@@ -113,7 +229,7 @@ export default function ChatScreen() {
       });
       formData.append('language', language);
 
-      const res = await fetch(`${API_URL}/chat/audio`, {
+      const res = await fetch(`${API_BASE_URL}/chat/audio`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -161,10 +277,9 @@ export default function ChatScreen() {
     setLoading(true);
 
     try {
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:5000';
       const token = await storage.getItemAsync('userToken');
       
-      const res = await fetch(`${API_URL}/chat`, {
+      const res = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -227,7 +342,7 @@ export default function ChatScreen() {
         </View>
       );
     }
-    return <Text style={[styles.messageText, msg.role === 'user' ? styles.userText : styles.aiText]}>{msg.text}</Text>;
+    return <MarkdownText text={msg.text} style={[styles.messageText, msg.role === 'user' ? styles.userText : styles.aiText]} />;
   };
 
   return (
@@ -235,18 +350,30 @@ export default function ChatScreen() {
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <TopHeaderBanner title="AI Vet Assistant" subtitle="Instant AI first-aid & consultation" />
+      <TopHeaderBanner title={t('chat.title', 'PashuRakshak AI Vet')} subtitle={t('chat.subtitle', '24/7 Intelligent Veterinary Assistant')} />
+
+      <View style={{ backgroundColor: '#FFFBEB', padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8, borderBottomWidth: 1, borderBottomColor: '#FDE68A' }}>
+        <FontAwesome name="exclamation-circle" size={16} color="#D97706" />
+        <Text style={{ fontSize: 12, color: '#B45309', fontWeight: '500', flex: 1 }}>
+          {t('chat.disclaimer', 'AI-generated information is for guidance only and does not replace professional veterinary diagnosis.')}
+        </Text>
+      </View>
 
       {/* Language Selector Sub-Bar */}
       <View style={styles.langBarContainer}>
-        <Text style={styles.langBarLabel}>Language:</Text>
-        <View style={styles.langToggle}>
-          {['English', 'Hindi', 'Marathi'].map(lang => (
-            <TouchableOpacity key={lang} onPress={() => setLanguage(lang)} style={[styles.langPill, language === lang && styles.langPillActive]}>
-              <Text style={[styles.langText, language === lang && styles.langTextActive]}>{lang}</Text>
-            </TouchableOpacity>
-          ))}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={styles.langBarLabel}>{t('chat.language', 'Language:')}</Text>
+          <View style={styles.langToggle}>
+            {['English', 'Hindi', 'Marathi'].map(lang => (
+              <TouchableOpacity key={lang} onPress={() => setLanguage(lang)} style={[styles.langPill, language === lang && styles.langPillActive]}>
+                <Text style={[styles.langText, language === lang && styles.langTextActive]}>{lang}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
+        <TouchableOpacity onPress={handleNewSession} style={{ padding: 6, backgroundColor: '#F1F5F9', borderRadius: 8 }}>
+          <FontAwesome name="refresh" size={14} color="#475569" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView 
@@ -255,48 +382,54 @@ export default function ChatScreen() {
         contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 110 }}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
       >
-        {/* Quick Symptom Chips */}
-        <View style={styles.chipScroll}>
-          {[
-            { label: '🌡️ High Fever', query: 'My cow has a high fever and is not eating.' },
-            { label: '🥛 Milk Drop', query: 'Milk yield suddenly dropped this morning.' },
-            { label: '🩹 Skin Lesions', query: 'Nodules and skin lesions appearing on cattle.' },
-            { label: '🩺 Vaccination', query: 'What free vaccination drives are active?' }
-          ].map(chip => (
-            <TouchableOpacity 
-              key={chip.label} 
-              style={styles.chipBtn} 
-              activeOpacity={0.8}
-              onPress={() => sendQuickQuery(chip.query)}
-            >
-              <Text style={styles.chipText}>{chip.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {messages.length <= 1 && (
+          <View style={styles.chipScroll}>
+            {[
+              t('chat.suggestion1', 'What are the signs of Lumpy Skin Disease?'),
+              t('chat.suggestion2', 'How to treat FMD in cattle?'),
+              t('chat.suggestion3', 'Best vaccination schedule for calves?'),
+              t('chat.suggestion4', 'How to prevent mastitis?')
+            ].map((sug, i) => (
+              <TouchableOpacity 
+                key={i} 
+                style={styles.chipBtn} 
+                activeOpacity={0.8}
+                onPress={() => sendQuickQuery(sug)}
+                disabled={loading}
+              >
+                <Text style={styles.chipText}>{sug}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <Text style={styles.dateStamp}>Today</Text>
 
-        {messages.map((msg, index) => (
-          <Animated.View 
-            key={msg.id} 
-            entering={msg.role === 'user' ? FadeInRight.springify() : FadeInUp.springify()} 
-            style={[styles.messageRow, msg.role === 'user' ? { justifyContent: 'flex-end' } : { justifyContent: 'flex-start' }]}
-          >
-            {msg.role === 'ai' && !msg.isCard && (
-              <View style={styles.avatarAi}>
-                <FontAwesome name="stethoscope" size={16} color={COLORS.primaryDark} />
+        {historyLoading ? (
+          <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 40 }} />
+        ) : (
+          messages.map((msg, index) => (
+            <Animated.View 
+              key={msg.id} 
+              entering={msg.role === 'user' ? FadeInRight.springify() : FadeInUp.springify()} 
+              style={[styles.messageRow, msg.role === 'user' ? { justifyContent: 'flex-end' } : { justifyContent: 'flex-start' }]}
+            >
+              {msg.role === 'ai' && !msg.isCard && (
+                <View style={styles.avatarAi}>
+                  <FontAwesome name="stethoscope" size={16} color={COLORS.primaryDark} />
+                </View>
+              )}
+              
+              <View style={[
+                styles.messageBubble, 
+                msg.role === 'user' ? styles.userBubble : styles.aiBubble,
+                msg.isCard && styles.cardBubble
+              ]}>
+                {renderMessageContent(msg)}
               </View>
-            )}
-            
-            <View style={[
-              styles.messageBubble, 
-              msg.role === 'user' ? styles.userBubble : styles.aiBubble,
-              msg.isCard && styles.cardBubble
-            ]}>
-              {renderMessageContent(msg)}
-            </View>
-          </Animated.View>
-        ))}
+            </Animated.View>
+          ))
+        )}
         {loading && (
           <Animated.View entering={FadeInUp} style={[styles.messageRow, { justifyContent: 'flex-start' }]}>
             <View style={styles.avatarAi}>
@@ -323,7 +456,7 @@ export default function ChatScreen() {
         <View style={styles.inputWrapper}>
           <TextInput 
             style={styles.input} 
-            placeholder="Ask about symptoms..." 
+            placeholder={t('chat.inputPlaceholder', 'Describe symptoms or ask a question...')} 
             placeholderTextColor={COLORS.textMuted}
             value={input}
             onChangeText={setInput}

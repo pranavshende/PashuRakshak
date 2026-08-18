@@ -14,8 +14,10 @@ import { useRouter, Link } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SHADOWS } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const phone = useRef('');
   const password = useRef('');
   const [loading, setLoading] = useState(false);
@@ -35,23 +37,23 @@ export default function LoginScreen() {
     const p = phone.current.trim();
     const pw = password.current;
     if (!p) {
-      setError('Phone number is required');
+      setError(t('auth.errorPhoneRequired', 'Phone number is required'));
       return false;
     }
     if (p.length < 10) {
-      setError('Enter a valid 10-digit phone number');
+      setError(t('auth.errorPhoneInvalid', 'Enter a valid 10-digit phone number'));
       return false;
     }
     if (!pw) {
-      setError('Password is required');
+      setError(t('auth.errorPasswordRequired', 'Password is required'));
       return false;
     }
     if (pw.length < 4) {
-      setError('Password must be at least 4 characters');
+      setError(t('auth.errorPasswordShort', 'Password must be at least 4 characters'));
       return false;
     }
     return true;
-  }, []);
+  }, [t]);
 
   const handleLogin = useCallback(async () => {
     setError(null);
@@ -101,7 +103,7 @@ export default function LoginScreen() {
             <Ionicons name="leaf" size={36} color="#fff" />
           </View>
           <Text style={styles.appName}>PashuRakshak</Text>
-          <Text style={styles.tagline}>Welcome back! Sign in to continue.</Text>
+          <Text style={styles.tagline}>{t('auth.welcome', 'Welcome back! Sign in to continue.')}</Text>
         </View>
 
         {/* ── Card ── */}
@@ -116,7 +118,7 @@ export default function LoginScreen() {
 
           {/* Phone Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Phone Number</Text>
+            <Text style={styles.inputLabel}>{t('auth.phoneNumber', 'Phone Number')}</Text>
             <View style={styles.inputRow}>
               <Ionicons
                 name="call-outline"
@@ -126,7 +128,7 @@ export default function LoginScreen() {
               />
               <TextInput
                 style={styles.textInput}
-                placeholder="Enter your phone number"
+                placeholder={t('auth.phonePlaceholder', 'Enter your phone number')}
                 placeholderTextColor="#94A3B8"
                 defaultValue=""
                 onChangeText={(t) => { phone.current = t; if (error) setError(null); }}
@@ -142,7 +144,7 @@ export default function LoginScreen() {
 
           {/* Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Password</Text>
+            <Text style={styles.inputLabel}>{t('auth.password', 'Password')}</Text>
             <View style={styles.inputRow}>
               <Ionicons
                 name="lock-closed-outline"
@@ -153,7 +155,7 @@ export default function LoginScreen() {
               <TextInput
                 ref={passwordRef}
                 style={styles.textInput}
-                placeholder="Enter your password"
+                placeholder={t('auth.passwordPlaceholder', 'Enter your password')}
                 placeholderTextColor="#94A3B8"
                 defaultValue=""
                 onChangeText={(t) => { password.current = t; if (error) setError(null); }}
@@ -178,7 +180,7 @@ export default function LoginScreen() {
 
           {/* Forgot Password */}
           <TouchableOpacity style={styles.forgotBtn} activeOpacity={0.7}>
-            <Text style={styles.forgotText}>Forgot Password?</Text>
+            <Text style={styles.forgotText}>{t('auth.forgotPassword', 'Forgot Password?')}</Text>
           </TouchableOpacity>
 
           {/* Sign In Button */}
@@ -192,7 +194,7 @@ export default function LoginScreen() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Text style={styles.signInText}>Sign In</Text>
+                <Text style={styles.signInText}>{t('auth.signIn', 'Sign In')}</Text>
                 <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
               </>
             )}
@@ -203,14 +205,14 @@ export default function LoginScreen() {
         <View style={styles.footer}>
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerLabel}>New here?</Text>
+            <Text style={styles.dividerLabel}>{t('auth.newHere', 'New here?')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           <Link href="/register" asChild>
             <TouchableOpacity style={styles.createBtn} activeOpacity={0.8}>
               <Ionicons name="person-add-outline" size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
-              <Text style={styles.createBtnText}>Create an Account</Text>
+              <Text style={styles.createBtnText}>{t('auth.createAccountBtn', 'Create an Account')}</Text>
             </TouchableOpacity>
           </Link>
         </View>

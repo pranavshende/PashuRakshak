@@ -5,10 +5,11 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useAuth, storage } from '../../../context/AuthContext';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
 import Animated, { FadeInRight } from 'react-native-reanimated';
-
 import TopHeaderBanner from '../../../components/TopHeaderBanner';
+import { useTranslation } from 'react-i18next';
 
 export default function AnimalListScreen() {
+  const { t } = useTranslation();
   const [animals, setAnimals] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -59,7 +60,7 @@ export default function AnimalListScreen() {
 
   const handleAddAnimal = async () => {
     if (!tagId.trim()) {
-      Alert.alert("Error", "Please enter a Tag ID.");
+      Alert.alert(t('common.error', 'Error'), t('animals.errorTagRequired', 'Please enter a Tag ID.'));
       return;
     }
     setSubmitting(true);
@@ -88,12 +89,12 @@ export default function AnimalListScreen() {
         setDob('');
         setWeight('');
         fetchAnimals();
-        Alert.alert("Success", "Animal registered successfully!");
+        Alert.alert(t('common.synced', 'Success'), t('animals.successAdded', 'Animal registered successfully!'));
       } else {
-        Alert.alert("Error", data.error || "Failed to register animal.");
+        Alert.alert(t('common.error', 'Error'), data.error || t('animals.errorAdd', 'Failed to register animal.'));
       }
     } catch (e) {
-      Alert.alert("Error", "Failed to reach server. Please check connection.");
+      Alert.alert(t('common.error', 'Error'), 'Failed to reach server. Please check connection.');
     } finally {
       setSubmitting(false);
     }
@@ -116,13 +117,13 @@ export default function AnimalListScreen() {
         </View>
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.animalSlimName}>{item.name || `Tag: ${item.tagId}`}</Text>
-          <Text style={styles.animalSlimBreed}>{item.breed || 'Mixed Breed'} • Tag: {item.tagId}</Text>
+          <Text style={styles.animalSlimName}>{item.name || `${t('animals.tag','Tag')}: ${item.tagId}`}</Text>
+          <Text style={styles.animalSlimBreed}>{item.breed || t('animals.mixedBreed','Mixed Breed')} • {t('animals.tag','Tag')}: {item.tagId}</Text>
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <View style={styles.scanPillSlim}>
-            <Text style={styles.scanPillTxtSlim}>{item.predictions?.length || 0} Scans</Text>
+            <Text style={styles.scanPillTxtSlim}>{item.predictions?.length || 0} {t('animals.scans','Scans')}</Text>
           </View>
           <FontAwesome name="chevron-right" size={11} color="#94A3B8" />
         </View>
@@ -132,7 +133,7 @@ export default function AnimalListScreen() {
 
   return (
     <View style={styles.container}>
-      <TopHeaderBanner title="My Livestock Herd" subtitle="Registered Cattle Profiles & Health History" />
+      <TopHeaderBanner title={t('animals.title', 'My Livestock Herd')} subtitle={t('animals.subtitle', 'Registered Cattle Profiles & Health History')} />
 
       {/* Sub-Header & Search Row */}
       <View style={styles.subSearchRow}>
@@ -140,7 +141,7 @@ export default function AnimalListScreen() {
           <FontAwesome name="search" size={13} color="#94A3B8" />
           <TextInput 
             style={styles.searchInputSlim}
-            placeholder="Search by name or tag ID..."
+            placeholder={t('animals.searchPlaceholder', 'Search by name or tag ID...')}
             placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -149,7 +150,7 @@ export default function AnimalListScreen() {
 
         <TouchableOpacity style={styles.addCattleBtnSlim} onPress={() => setModalVisible(true)} activeOpacity={0.8}>
           <FontAwesome name="plus" size={12} color="#FFFFFF" />
-          <Text style={styles.addCattleBtnTxtSlim}>Register</Text>
+          <Text style={styles.addCattleBtnTxtSlim}>{t('animals.registerBtn', 'Register')}</Text>
         </TouchableOpacity>
       </View>
       
@@ -169,8 +170,8 @@ export default function AnimalListScreen() {
               <View style={styles.emptyIconWrapper}>
                 <FontAwesome name="paw" size={48} color={COLORS.primary} />
               </View>
-              <Text style={styles.emptyTitle}>No animals found</Text>
-              <Text style={styles.emptyText}>Add your first animal to start tracking their health and history.</Text>
+              <Text style={styles.emptyTitle}>{t('animals.noAnimals', 'No animals found')}</Text>
+              <Text style={styles.emptyText}>{t('animals.noAnimalsDesc', 'Add your first animal to start tracking their health and history.')}</Text>
             </View>
           }
         />
@@ -182,7 +183,7 @@ export default function AnimalListScreen() {
         onPress={() => setModalVisible(true)}
       >
         <FontAwesome name="plus" size={18} color="#fff" style={{ marginRight: SPACING.sm }} />
-        <Text style={styles.fabText}>Add Animal</Text>
+        <Text style={styles.fabText}>{t('animals.addAnimal', 'Add Animal')}</Text>
       </TouchableOpacity>
 
       <Modal
@@ -194,53 +195,53 @@ export default function AnimalListScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Animal</Text>
+              <Text style={styles.modalTitle}>{t('animals.addAnimalTitle', 'Add New Animal')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                 <FontAwesome name="times" size={18} color={COLORS.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalForm} showsVerticalScrollIndicator={false}>
-              <Text style={styles.label}>Tag ID *</Text>
+              <Text style={styles.label}>{t('animals.tagIdLabel', 'Tag ID *')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. RFID-982-110"
+                placeholder={t('animals.tagIdPlaceholder', 'e.g. RFID-982-110')}
                 placeholderTextColor={COLORS.textMuted}
                 value={tagId}
                 onChangeText={setTagId}
               />
 
-              <Text style={styles.label}>Animal Name</Text>
+              <Text style={styles.label}>{t('animals.nameLabel', 'Animal Name')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Ganga, Laxmi"
+                placeholder={t('animals.namePlaceholder', 'e.g. Ganga, Laxmi')}
                 placeholderTextColor={COLORS.textMuted}
                 value={name}
                 onChangeText={setName}
               />
 
-              <Text style={styles.label}>Breed</Text>
+              <Text style={styles.label}>{t('animals.breedLabel', 'Breed')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Holstein Friesian, Gir"
+                placeholder={t('animals.breedPlaceholder', 'e.g. Holstein Friesian, Gir')}
                 placeholderTextColor={COLORS.textMuted}
                 value={breed}
                 onChangeText={setBreed}
               />
 
-              <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
+              <Text style={styles.label}>{t('animals.dobLabel', 'Date of Birth (YYYY-MM-DD)')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. 2024-03-15"
+                placeholder={t('animals.dobPlaceholder', 'e.g. 2024-03-15')}
                 placeholderTextColor={COLORS.textMuted}
                 value={dob}
                 onChangeText={setDob}
               />
 
-              <Text style={styles.label}>Weight (kg)</Text>
+              <Text style={styles.label}>{t('animals.weightLabel', 'Weight (kg)')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. 450"
+                placeholder={t('animals.weightPlaceholder', 'e.g. 450')}
                 placeholderTextColor={COLORS.textMuted}
                 keyboardType="numeric"
                 value={weight}
@@ -256,7 +257,7 @@ export default function AnimalListScreen() {
                 {submitting ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.submitBtnText}>Add to Herd</Text>
+                  <Text style={styles.submitBtnText}>{t('animals.addToHerd', 'Add to Herd')}</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>

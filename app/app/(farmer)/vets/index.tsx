@@ -7,13 +7,29 @@ import TopHeaderBanner from '../../../components/TopHeaderBanner';
 import Animated, { FadeInDown, FadeInRight, FadeInUp } from 'react-native-reanimated';
 import { storage } from '../../../context/AuthContext';
 import * as Location from 'expo-location';
-
-
+import { useTranslation } from 'react-i18next';
 
 import { API_BASE_URL } from '../../../config/api';
 
+// Dynamically import MapView for native platforms to avoid bundle crashes on web and Expo Go environments
+let MapView: any = null;
+let Marker: any = null;
+let Circle: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    const MapModule = require('react-native-maps');
+    MapView = MapModule.default;
+    Marker = MapModule.Marker;
+    Circle = MapModule.Circle;
+  } catch (error) {
+    console.warn("react-native-maps could not be loaded in this environment. Falling back to mockup map.", error);
+  }
+}
+
 export default function VetSearchScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [vets, setVets] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,7 +107,7 @@ export default function VetSearchScreen() {
 
   return (
     <View style={styles.container}>
-      <TopHeaderBanner title="Nearby Vets & Clinics" subtitle="Government Veterinary Officers & Hospitals" />
+      <TopHeaderBanner title={t('vets.title', 'Nearby Vets & Clinics')} subtitle={t('vets.subtitle', 'Government Veterinary Officers & Hospitals')} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
@@ -101,8 +117,8 @@ export default function VetSearchScreen() {
             <FontAwesome name="ambulance" size={22} color="#FFFFFF" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.emergencyTitle}>24/7 Animal Emergency Helpline</Text>
-            <Text style={styles.emergencySub}>National Veterinary Distress Number: 1962</Text>
+            <Text style={styles.emergencyTitle}>{t('vets.emergencyTitle', '24/7 Animal Emergency Helpline')}</Text>
+            <Text style={styles.emergencySub}>{t('vets.emergencySub', 'National Veterinary Distress Number: 1962')}</Text>
           </View>
           <TouchableOpacity 
             style={styles.emergencyCallBtn} 
@@ -110,7 +126,7 @@ export default function VetSearchScreen() {
             onPress={() => handleCallVet('1962', 'National Animal Emergency Helpline')}
           >
             <FontAwesome name="phone" size={14} color="#DC2626" />
-            <Text style={styles.emergencyCallTxt}>Call 1962</Text>
+            <Text style={styles.emergencyCallTxt}>{t('vets.call1962', 'Call 1962')}</Text>
           </TouchableOpacity>
         </Animated.View>
 
@@ -119,7 +135,7 @@ export default function VetSearchScreen() {
           <FontAwesome name="search" size={16} color="#64748B" style={{ marginLeft: 12 }} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search vet by name, clinic, or specialty..."
+            placeholder={t('vets.searchPlaceholder', 'Search vet by name, clinic, or specialty...')}
             placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -148,7 +164,7 @@ export default function VetSearchScreen() {
             <View style={styles.mapHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <FontAwesome name={isSatellite ? "globe" : "map"} size={16} color={isSatellite ? "#0284C7" : "#059669"} />
-                <Text style={styles.mapTitle}>{isSatellite ? 'Live Satellite Proximity' : 'Live Geo-Proximity Map'}</Text>
+                <Text style={styles.mapTitle}>{isSatellite ? t('vets.satelliteMap', 'Live Satellite Proximity') : t('vets.mapTitle', 'Live Geo-Proximity Map')}</Text>
               </View>
 
               <TouchableOpacity 
@@ -172,14 +188,14 @@ export default function VetSearchScreen() {
               )}
               <FontAwesome name={isSatellite ? "globe" : "compass"} size={36} color={isSatellite ? "#38BDF8" : "#059669"} />
               <Text style={[styles.mapLabel, isSatellite && { color: '#38BDF8', backgroundColor: 'rgba(15,23,42,0.8)', paddingHorizontal: 8, borderRadius: 6 }]}>
-                {isSatellite ? 'Nagpur Orbital Satellite Radar' : 'Nagpur District Veterinary Radar'}
+                {t('vets.mapLabel', 'Nagpur District Veterinary Radar')}
               </Text>
               <Text style={[styles.mapSubLabel, isSatellite && { color: '#E2E8F0', backgroundColor: 'rgba(15,23,42,0.8)', paddingHorizontal: 8, borderRadius: 6 }]}>
                 {isSatellite ? 'High-resolution satellite terrain & hospital markers' : 'Tap here to open full interactive map & hospital pins'}
               </Text>
               <View style={[styles.openMapBtnPill, isSatellite && { backgroundColor: '#0284C7' }]}>
                 <FontAwesome name="external-link" size={11} color="#FFFFFF" />
-                <Text style={styles.openMapBtnTxt}>Open Radar Map Screen</Text>
+                <Text style={styles.openMapBtnTxt}>{t('vets.openRadar', 'Open Radar Map Screen')}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -300,58 +316,42 @@ export default function VetSearchScreen() {
             </View>
           </View>
 
-          {/* Interactive Radar Grid Area */}
-          <View style={[styles.radarMapArea, isSatellite && { backgroundColor: '#031724' }]}>
-            {isSatellite && (
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&auto=format&fit=crop&q=80' }} 
-                style={[StyleSheet.absoluteFillObject, { opacity: 0.65 }]} 
-                resizeMode="cover" 
-              />
+          {/* Interactive Radar Map Area */}
+          <View style={{ flex: 1, backgroundColor: '#020617' }}>
+            {Platform.OS !== 'web' && MapView ? (
+              <MapView
+                style={StyleSheet.absoluteFillObject}
+                mapType={isSatellite ? 'satellite' : 'standard'}
+                initialRegion={{
+                  latitude: 21.1458,
+                  longitude: 79.0882,
+                  latitudeDelta: 0.15,
+                  longitudeDelta: 0.15,
+                }}
+                showsUserLocation={true}
+              >
+                {filteredVets.map((v: any, i: number) => {
+                  const isSelected = selectedMapVet?.id === v.id;
+                  return (
+                    <Marker
+                      key={v.id}
+                      coordinate={{
+                        latitude: v.latitude || 21.1458 + (i * 0.01),
+                        longitude: v.longitude || 79.0882 + (i * 0.01),
+                      }}
+                      title={v.name}
+                      description={v.clinic}
+                      pinColor={isSelected ? 'blue' : 'green'}
+                      onPress={() => setSelectedMapVet(v)}
+                    />
+                  );
+                })}
+              </MapView>
+            ) : (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: 'white' }}>Radar Map is not available on this platform.</Text>
+              </View>
             )}
-            <View style={styles.radarCircleOuter} />
-            <View style={styles.radarCircleMid} />
-            <View style={styles.radarCircleInner} />
-
-            {/* Radar Center (Farmer Location) */}
-            <View style={styles.radarCenterPin}>
-              <View style={styles.radarCenterPulse} />
-              <FontAwesome name="user" size={12} color="#FFFFFF" />
-            </View>
-            <Text style={styles.radarCenterLabel}>Your Farm (Nagpur)</Text>
-
-            {/* Plotted Vet Hospital Markers */}
-            {filteredVets.map((v, i) => {
-              // Calculate deterministic positions across radar grid
-              const positions = [
-                { top: '22%', left: '20%' },
-                { top: '35%', left: '68%' },
-                { top: '58%', left: '18%' },
-                { top: '18%', left: '55%' },
-                { top: '65%', left: '72%' },
-                { top: '78%', left: '42%' },
-                { top: '28%', left: '82%' },
-                { top: '82%', left: '22%' },
-                { top: '48%', left: '85%' },
-                { top: '12%', left: '35%' },
-              ];
-              const pos = positions[i % positions.length];
-              const isSelected = selectedMapVet?.id === v.id;
-
-              return (
-                <TouchableOpacity
-                  key={v.id}
-                  style={[styles.radarPinWrapper, pos as any, isSelected && styles.radarPinSelected]}
-                  activeOpacity={0.8}
-                  onPress={() => setSelectedMapVet(v)}
-                >
-                  <View style={[styles.radarPinBadge, isSelected && styles.radarPinBadgeActive]}>
-                    <FontAwesome name="user-md" size={12} color={isSelected ? "#FFFFFF" : "#059669"} />
-                    <Text style={[styles.radarPinNum, isSelected && { color: '#FFFFFF' }]}>#{i + 1}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
           </View>
 
           {/* Bottom Selected Vet Detail Sheet */}

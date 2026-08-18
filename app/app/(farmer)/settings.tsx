@@ -6,28 +6,31 @@ import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, SIZES, SHADOWS } from '../../constants/theme';
 import TopHeaderBanner from '../../components/TopHeaderBanner';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
+import * as SecureStore from 'expo-secure-store';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const { t, i18n } = useTranslation();
   const [clearing, setClearing] = useState(false);
   const [offlineSync, setOfflineSync] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
 
   const handleClearCache = async () => {
     Alert.alert(
-      "Clear Offline Cache",
-      "Are you sure? This will delete all cached offline diagnostic records.",
+      t('settings.clearCache'),
+      t('settings.clearCacheSub'),
       [
         { text: "Cancel", style: "cancel" },
         { 
-          text: "Clear Data", 
+          text: t('settings.clearCacheBtn'), 
           style: "destructive",
           onPress: async () => {
             setClearing(true);
             try {
               await new Promise(resolve => setTimeout(resolve, 800));
-              Alert.alert("Success", "Offline cache cleared successfully.");
+              Alert.alert("Success", t('settings.cacheCleared'));
             } catch (e) {
               Alert.alert("Error", "Could not clear cache.");
             } finally {
@@ -35,6 +38,19 @@ export default function SettingsScreen() {
             }
           }
         }
+      ]
+    );
+  };
+
+  const handleChangeLanguage = () => {
+    Alert.alert(
+      "Select Language",
+      "Choose your preferred application language",
+      [
+        { text: "English", onPress: async () => { await SecureStore.setItemAsync('user_language', 'en'); i18n.changeLanguage('en'); } },
+        { text: "हिन्दी (Hindi)", onPress: async () => { await SecureStore.setItemAsync('user_language', 'hi'); i18n.changeLanguage('hi'); } },
+        { text: "मराठी (Marathi)", onPress: async () => { await SecureStore.setItemAsync('user_language', 'mr'); i18n.changeLanguage('mr'); } },
+        { text: "Cancel", style: "cancel" }
       ]
     );
   };
@@ -69,9 +85,11 @@ export default function SettingsScreen() {
     </TouchableOpacity>
   );
 
+  const currentLangLabel = i18n.language === 'hi' ? 'हिन्दी (Hindi)' : i18n.language === 'mr' ? 'मराठी (Marathi)' : 'English';
+
   return (
     <View style={styles.container}>
-      <TopHeaderBanner title="App Settings" subtitle="Preferences & Account Management" />
+      <TopHeaderBanner title={t('settings.configTitle', 'App Settings')} subtitle={t('settings.configSub', 'Preferences & Account Management')} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         
@@ -79,8 +97,8 @@ export default function SettingsScreen() {
         <Animated.View entering={FadeInDown.duration(400).springify()}>
           <Text style={styles.sectionTitle}>General</Text>
           <View style={styles.slimCard}>
-            {renderSlimRow('user-circle', 'Farmer Profile', '#059669', false, () => router.push('/(farmer)/two' as any))}
-            {renderSlimRow('language', 'Language (English)', '#0284C7', false, () => {})}
+            {renderSlimRow('user-circle', t('settings.farmerProfile', 'Farmer Profile'), '#059669', false, () => router.push('/(farmer)/two' as any))}
+            {renderSlimRow('language', `${t('settings.appLanguage', 'Language')} (${currentLangLabel})`, '#0284C7', false, handleChangeLanguage)}
             {renderSlimRow('moon-o', 'Dark Mode', '#475569', false, undefined, 
               <Switch 
                 value={darkMode} 
@@ -94,7 +112,7 @@ export default function SettingsScreen() {
 
         {/* Data & Cloud Sync */}
         <Animated.View entering={FadeInUp.duration(500).delay(100).springify()}>
-          <Text style={styles.sectionTitle}>Data & Sync</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sysMaintenance', 'Data & Sync')}</Text>
           <View style={styles.slimCard}>
             {renderSlimRow('cloud-upload', 'Auto Cloud Sync', '#059669', false, undefined, 
               <Switch 
@@ -104,7 +122,7 @@ export default function SettingsScreen() {
                 style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
               />
             )}
-            {renderSlimRow('trash', 'Clear Offline Cache', '#DC2626', true, handleClearCache, clearing ? <ActivityIndicator size="small" color="#DC2626" /> : undefined, true)}
+            {renderSlimRow('trash', t('settings.clearCache', 'Clear Offline Cache'), '#DC2626', true, handleClearCache, clearing ? <ActivityIndicator size="small" color="#DC2626" /> : undefined, true)}
           </View>
         </Animated.View>
 
@@ -122,7 +140,7 @@ export default function SettingsScreen() {
         <Animated.View entering={FadeInUp.duration(600).delay(300).springify()}>
           <TouchableOpacity style={styles.slimLogoutBtn} onPress={handleLogout} activeOpacity={0.8}>
             <FontAwesome name="sign-out" size={14} color="#DC2626" />
-            <Text style={styles.slimLogoutText}>Sign Out Account</Text>
+            <Text style={styles.slimLogoutText}>{t('settings.logoutBtn', 'Sign Out Account')}</Text>
           </TouchableOpacity>
           <Text style={styles.versionText}>PashuRakshak v2.0.0 (Official Build)</Text>
         </Animated.View>

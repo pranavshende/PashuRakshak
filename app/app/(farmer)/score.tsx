@@ -7,8 +7,10 @@ import { COLORS, SPACING, SIZES, SHADOWS } from '../../constants/theme';
 import TopHeaderBanner from '../../components/TopHeaderBanner';
 import Animated, { FadeInDown, FadeInUp, FadeInRight } from 'react-native-reanimated';
 import { storage } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function FarmScoreScreen() {
+  const { t } = useTranslation();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -57,7 +59,7 @@ export default function FarmScoreScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <TopHeaderBanner title="Farm Analytics & Health Score" subtitle="AI Livestock Productivity & Risk Assessment" />
+        <TopHeaderBanner title={t('score.title', 'Farm Analytics & Health Score')} subtitle={t('score.subtitle', 'AI Livestock Productivity & Risk Assessment')} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#059669" />
           <Text style={{ fontSize: 13, color: '#64748B', marginTop: 8 }}>Computing herd productivity index...</Text>
@@ -71,7 +73,7 @@ export default function FarmScoreScreen() {
 
   return (
     <View style={styles.container}>
-      <TopHeaderBanner title="Farm Analytics & Health Score" subtitle="AI Livestock Productivity & Risk Assessment" />
+      <TopHeaderBanner title={t('score.title', 'Farm Analytics & Health Score')} subtitle={t('score.subtitle', 'AI Livestock Productivity & Risk Assessment')} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         

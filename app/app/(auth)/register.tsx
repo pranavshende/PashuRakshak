@@ -15,8 +15,10 @@ import { useRouter, Link } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SHADOWS } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const name = useRef('');
   const phone = useRef('');
   const password = useRef('');
@@ -34,27 +36,27 @@ export default function RegisterScreen() {
 
   const validate = useCallback((): boolean => {
     if (!name.current.trim()) {
-      setError('Full name is required');
+      setError(t('auth.errorNameRequired', 'Full name is required'));
       return false;
     }
     if (!phone.current.trim()) {
-      setError('Phone number is required');
+      setError(t('auth.errorPhoneRequired', 'Phone number is required'));
       return false;
     }
     if (phone.current.trim().length < 10) {
-      setError('Enter a valid 10-digit phone number');
+      setError(t('auth.errorPhoneInvalid', 'Enter a valid 10-digit phone number'));
       return false;
     }
     if (!password.current) {
-      setError('Password is required');
+      setError(t('auth.errorPasswordRequired', 'Password is required'));
       return false;
     }
     if (password.current.length < 4) {
-      setError('Password must be at least 4 characters');
+      setError(t('auth.errorPasswordShort', 'Password must be at least 4 characters'));
       return false;
     }
     return true;
-  }, []);
+  }, [t]);
 
   const handleRegister = useCallback(async () => {
     setError(null);
@@ -78,7 +80,7 @@ export default function RegisterScreen() {
         throw new Error(data.error || 'Failed to create account');
       }
 
-      Alert.alert('Registration Successful', 'Please log in with your new account.');
+      Alert.alert(t('auth.registrationSuccess', 'Registration Successful'), t('auth.registrationSuccessMsg', 'Please log in with your new account.'));
       router.replace('/login');
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
@@ -106,7 +108,7 @@ export default function RegisterScreen() {
             <Ionicons name="leaf" size={36} color="#fff" />
           </View>
           <Text style={styles.appName}>PashuRakshak</Text>
-          <Text style={styles.tagline}>Create your farmer account</Text>
+          <Text style={styles.tagline}>{t('auth.createAccount', 'Create your farmer account')}</Text>
         </View>
 
         {/* ── Card ── */}
@@ -120,12 +122,12 @@ export default function RegisterScreen() {
 
           {/* Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Full Name</Text>
+            <Text style={styles.inputLabel}>{t('auth.fullName', 'Full Name')}</Text>
             <View style={styles.inputRow}>
               <Ionicons name="person-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. Ramesh Kumar"
+                placeholder={t('auth.fullNamePlaceholder', 'e.g. Ramesh Kumar')}
                 placeholderTextColor="#94A3B8"
                 defaultValue=""
                 onChangeText={(t) => { name.current = t; if (error) setError(null); }}
@@ -140,13 +142,13 @@ export default function RegisterScreen() {
 
           {/* Phone */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Phone Number</Text>
+            <Text style={styles.inputLabel}>{t('auth.phoneNumber', 'Phone Number')}</Text>
             <View style={styles.inputRow}>
               <Ionicons name="call-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
               <TextInput
                 ref={phoneRef}
                 style={styles.textInput}
-                placeholder="Enter your phone number"
+                placeholder={t('auth.phonePlaceholder', 'Enter your phone number')}
                 placeholderTextColor="#94A3B8"
                 defaultValue=""
                 onChangeText={(t) => { phone.current = t; if (error) setError(null); }}
@@ -162,13 +164,13 @@ export default function RegisterScreen() {
 
           {/* Password */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Password</Text>
+            <Text style={styles.inputLabel}>{t('auth.password', 'Password')}</Text>
             <View style={styles.inputRow}>
               <Ionicons name="lock-closed-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
               <TextInput
                 ref={passwordRef}
                 style={styles.textInput}
-                placeholder="Create a password"
+                placeholder={t('auth.createPasswordPlaceholder', 'Create a password')}
                 placeholderTextColor="#94A3B8"
                 defaultValue=""
                 onChangeText={(t) => { password.current = t; if (error) setError(null); }}
@@ -203,7 +205,7 @@ export default function RegisterScreen() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Text style={styles.signUpText}>Create Account</Text>
+                <Text style={styles.signUpText}>{t('auth.createAccountBtn', 'Create Account')}</Text>
                 <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
               </>
             )}
@@ -214,14 +216,14 @@ export default function RegisterScreen() {
         <View style={styles.footer}>
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerLabel}>Already registered?</Text>
+            <Text style={styles.dividerLabel}>{t('auth.alreadyRegistered', 'Already registered?')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           <Link href="/login" asChild>
             <TouchableOpacity style={styles.loginBtn} activeOpacity={0.8}>
               <Ionicons name="log-in-outline" size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
-              <Text style={styles.loginBtnText}>Sign In</Text>
+              <Text style={styles.loginBtnText}>{t('auth.signIn', 'Sign In')}</Text>
             </TouchableOpacity>
           </Link>
         </View>

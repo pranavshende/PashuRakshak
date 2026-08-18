@@ -3,8 +3,11 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
 import { COLORS, SHADOWS } from '../../constants/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function TabLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -42,35 +45,35 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('layout.home', 'Home'),
           tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'AI Vet',
+          title: t('layout.aiVet', 'AI Vet'),
           tabBarIcon: ({ color }) => <FontAwesome name="comments" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="community/index"
         options={{
-          title: 'Alerts',
+          title: t('layout.alerts', 'Alerts'),
           tabBarIcon: ({ color }) => <FontAwesome name="map" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: t('layout.settings', 'Settings'),
           tabBarIcon: ({ color }) => <FontAwesome name="cog" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="two"
         options={{
-          title: 'Profile',
+          title: t('layout.profile', 'Profile'),
           tabBarIcon: ({ color }) => <FontAwesome name="user" size={22} color={color} />,
         }}
       />
@@ -86,6 +89,7 @@ export default function TabLayout() {
       <Tabs.Screen name="animals/index" options={{ href: null }} />
       <Tabs.Screen name="animals/[id]" options={{ href: null }} />
       <Tabs.Screen name="animals/certificate" options={{ href: null }} />
+      <Tabs.Screen name="debugger" options={{ href: null }} />
     </Tabs>
   );
 }

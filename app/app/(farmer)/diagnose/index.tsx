@@ -6,10 +6,12 @@ import { COLORS, SPACING, SIZES, SHADOWS } from '../../../constants/theme';
 import TopHeaderBanner from '../../../components/TopHeaderBanner';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { storage } from '../../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 import { runOfflineGeminiDiagnosis } from '../../../utils/offlineAI';
 
 export default function DiagnoseScreen() {
+  const { t } = useTranslation();
   const { imageUri, model } = useLocalSearchParams();
   const modelLabel: Record<string, string> = {
     gemini: 'Google Gemini Vision (Cloud)',
@@ -99,7 +101,7 @@ export default function DiagnoseScreen() {
 
   return (
     <View style={styles.container}>
-      <TopHeaderBanner title="AI Disease Diagnosis" subtitle={`Analyzed by ${modelLabel[activeModel] || 'AI Model'}`} />
+      <TopHeaderBanner title={t('diagnose.title', 'AI Disease Diagnosis')} subtitle={`${t('diagnose.subtitle', 'Analyzed by')} ${modelLabel[activeModel] || 'AI Model'}`} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         

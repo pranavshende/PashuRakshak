@@ -8,22 +8,23 @@ import Animated, { FadeInDown, FadeInRight, FadeInUp } from 'react-native-reanim
 import { storage } from '../../../context/AuthContext';
 import * as Location from 'expo-location';
 import { simulateBluetoothMeshBroadcast } from '../../../utils/simulatedMesh';
+import { useTranslation } from 'react-i18next';
 
 // Dynamically import MapView for native platforms to avoid bundle crashes on web and Expo Go environments
 let MapView: any = null;
 let Marker: any = null;
 let Circle: any = null;
-// Temporarily disabled react-native-maps on all platforms to prevent crash without API Key in production
-// if (Platform.OS !== 'web') {
-//   try {
-//     const MapModule = require('react-native-maps');
-//     MapView = MapModule.default;
-//     Marker = MapModule.Marker;
-//     Circle = MapModule.Circle;
-//   } catch (error) {
-//     console.warn("react-native-maps could not be loaded in this environment. Falling back to mockup map.", error);
-//   }
-// }
+
+if (Platform.OS !== 'web') {
+  try {
+    const MapModule = require('react-native-maps');
+    MapView = MapModule.default;
+    Marker = MapModule.Marker;
+    Circle = MapModule.Circle;
+  } catch (error) {
+    console.warn("react-native-maps could not be loaded in this environment. Falling back to mockup map.", error);
+  }
+}
 
 const { width } = Dimensions.get('window');
 
@@ -145,6 +146,7 @@ const INITIAL_OUTBREAKS = [
 
 export default function CommunityNetworkScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [alerts, setAlerts] = useState<any[]>(INITIAL_OUTBREAKS);
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
@@ -241,7 +243,7 @@ export default function CommunityNetworkScreen() {
 
   return (
     <View style={styles.container}>
-      <TopHeaderBanner title="Intelligence Network" subtitle="Community Disease Surveillance" />
+      <TopHeaderBanner title={t('alerts.title', 'Disease Outbreak Alerts')} subtitle={t('alerts.subtitle', 'Regional Health & Safety Monitoring')} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
@@ -284,14 +286,14 @@ export default function CommunityNetworkScreen() {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Regional Disease Heatmap */}
-        <Animated.View entering={FadeInUp.delay(200).springify()} style={styles.heatmapCard}>
+        {/* Live Heatmap Preview */}
+        <Animated.View entering={FadeInUp.duration(500).delay(100).springify()} style={GLOBAL_STYLES.card}>
           <View style={{ marginBottom: SPACING.sm }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.sectionTitle}>Regional Heatmap</Text>
+              <Text style={styles.sectionTitle}>{t('alerts.radarTitle', 'Regional Heatmap')}</Text>
               <TouchableOpacity style={styles.openMapBadgeBtn} onPress={() => setIsMapModalOpen(true)} activeOpacity={0.8}>
                 <FontAwesome name="map-marker" size={12} color={COLORS.primaryDark} />
-                <Text style={styles.openMapBadgeText}>Open Radar</Text>
+                <Text style={styles.openMapBadgeText}>{t('alerts.openMap', 'Open Radar')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -363,10 +365,10 @@ export default function CommunityNetworkScreen() {
         {/* Intelligence Feed */}
         <View style={styles.feedSection}>
           <View style={styles.feedHeader}>
-            <Text style={styles.sectionTitle}>Nearby Outbreak Alerts</Text>
+            <Text style={styles.sectionTitle}>{t('alerts.recentAlerts', 'Nearby Outbreak Alerts')}</Text>
             <View style={styles.liveBadge}>
               <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE MONITORING</Text>
+              <Text style={styles.liveText}>{t('alerts.live', 'LIVE MONITORING')}</Text>
             </View>
           </View>
 
@@ -553,49 +555,54 @@ export default function CommunityNetworkScreen() {
           </View>
 
           {/* Interactive Outbreak Grid */}
-          <View style={{ flex: 1, backgroundColor: '#020617', justifyContent: 'center', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-            {isSatellite && (
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&auto=format&fit=crop&q=80' }} 
-                style={[StyleSheet.absoluteFillObject, { opacity: 0.65 }]} 
-                resizeMode="cover" 
+          <View style={{ flex: 1, backgroundColor: '#020617' }}>
+            {Platform.OS === 'web' || !MapView ? (
+              <WebMockupMap 
+                alerts={alerts} 
+                userLocation={userLocation} 
+                onSelectAlert={(a: any) => { setIsMapModalOpen(false); setActivePrecautionModal(a); }}
+                selectedAlert={selectedAlert}
+                isSatellite={isSatellite}
               />
+            ) : (
+              <MapView
+                style={StyleSheet.absoluteFillObject}
+                mapType={isSatellite ? 'satellite' : 'standard'}
+                initialRegion={{
+                  latitude: userLocation?.latitude || 21.1458,
+                  longitude: userLocation?.longitude || 79.0882,
+                  latitudeDelta: 0.4,
+                  longitudeDelta: 0.4,
+                }}
+                showsUserLocation={true}
+              >
+                {alerts.map((a: any) => (
+                  <Marker
+                    key={a.id}
+                    coordinate={{
+                      latitude: a.latitude || 21.1458,
+                      longitude: a.longitude || 79.0882,
+                    }}
+                    title={a.disease || a.name}
+                    description={`Severity: ${a.severity} | Distance: ${a.distance}`}
+                    pinColor={a.severity === 'CRITICAL' ? 'red' : a.severity === 'HIGH' ? 'orange' : 'green'}
+                    onCalloutPress={() => {
+                      setIsMapModalOpen(false);
+                      setActivePrecautionModal(a);
+                    }}
+                  />
+                ))}
+                {userLocation && (
+                  <Circle
+                    center={userLocation}
+                    radius={15000}
+                    fillColor="rgba(239, 68, 68, 0.15)"
+                    strokeColor="rgba(239, 68, 68, 0.4)"
+                    strokeWidth={2}
+                  />
+                )}
+              </MapView>
             )}
-
-            <View style={{ position: 'absolute', width: 300, height: 300, borderRadius: 150, borderWidth: 1, borderColor: isSatellite ? 'rgba(56, 189, 248, 0.5)' : 'rgba(239, 68, 68, 0.3)' }} />
-            <View style={{ position: 'absolute', width: 200, height: 200, borderRadius: 100, borderWidth: 1, borderColor: isSatellite ? 'rgba(56, 189, 248, 0.6)' : 'rgba(239, 68, 68, 0.4)' }} />
-            
-            {/* Center Farmer Pin */}
-            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#38BDF8', justifyContent: 'center', alignItems: 'center' }}>
-              <FontAwesome name="user" size={12} color="#FFFFFF" />
-            </View>
-            <Text style={{ fontSize: 11, fontWeight: '800', color: '#38BDF8', marginTop: 6, backgroundColor: 'rgba(15,23,42,0.8)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
-              Your Location (Nagpur)
-            </Text>
-
-            {/* Outbreak Hotspot Pins */}
-            {alerts.map((alertItem, i) => {
-              const hotspotPositions = [
-                { top: '25%', left: '22%' },
-                { top: '38%', left: '72%' },
-                { top: '62%', left: '28%' },
-                { top: '72%', left: '68%' }
-              ];
-              const pos = hotspotPositions[i % hotspotPositions.length];
-              return (
-                <TouchableOpacity
-                  key={alertItem.id}
-                  style={[{ position: 'absolute', padding: 6 }, pos as any]}
-                  activeOpacity={0.8}
-                  onPress={() => setActivePrecautionModal(alertItem)}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: isSatellite ? '#0284C7' : '#EF4444', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 12, borderWidth: 1.5, borderColor: '#FFFFFF' }}>
-                    <FontAwesome name={isSatellite ? "globe" : "warning"} size={11} color="#FFFFFF" />
-                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>{alertItem.disease}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
           </View>
         </View>
       </Modal>

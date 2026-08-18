@@ -6,8 +6,10 @@ import { useRouter } from 'expo-router';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
 import Animated, { FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, cancelAnimation } from 'react-native-reanimated';
 import { storage } from '../../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function SyncScreen() {
+  const { t } = useTranslation();
   const [pendingRecords, setPendingRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -112,8 +114,8 @@ export default function SyncScreen() {
             <FontAwesome name="arrow-left" size={20} color={COLORS.textMain} />
           </TouchableOpacity>
           <View>
-            <Text style={styles.headerTitle}>Sync Center</Text>
-            <Text style={styles.headerSubtitle}>Offline Data Manager</Text>
+            <Text style={styles.headerTitle}>{t('sync.title', 'Sync Center')}</Text>
+            <Text style={styles.headerSubtitle}>{t('sync.subtitle', 'Offline Data Manager')}</Text>
           </View>
         </View>
       </View>

@@ -6,8 +6,10 @@ import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../.
 import { useRouter } from 'expo-router';
 import TopHeaderBanner from '../../components/TopHeaderBanner';
 import Animated, { FadeInRight, FadeInUp, Layout } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 export default function MedicineScreen() {
+  const { t } = useTranslation();
   const [diseases, setDiseases] = useState<string[]>([]);
   const [disease, setDisease] = useState('');
   const [data, setData] = useState<any>(null);
@@ -134,7 +136,7 @@ export default function MedicineScreen() {
 
   return (
     <View style={styles.container}>
-      <TopHeaderBanner title="Medical Records & Medicines" subtitle="Government Approved Treatment Plans" />
+      <TopHeaderBanner title={t('medicine.title', 'Medicine Guidance')} subtitle={t('medicine.subtitle', 'Veterinary Drugs & Dosages')} />
 
       {/* Sub-Header Bar with Add Plan Button */}
       <View style={styles.subBarContainer}>

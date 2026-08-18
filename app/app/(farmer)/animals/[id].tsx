@@ -5,8 +5,10 @@ import { FontAwesome } from '@expo/vector-icons';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
 import Animated, { FadeInDown, FadeInRight, Layout } from 'react-native-reanimated';
 import { storage } from '../../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function AnimalProfileScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [animal, setAnimal] = useState<any>(null);
@@ -43,7 +45,7 @@ export default function AnimalProfileScreen() {
           </TouchableOpacity>
           <View style={styles.statusPill}>
             <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Active Profile</Text>
+            <Text style={styles.statusText}>{t('animals.activeProfile', 'Active Profile')}</Text>
           </View>
         </View>
 
@@ -59,12 +61,12 @@ export default function AnimalProfileScreen() {
           activeOpacity={0.8}
         >
           <FontAwesome name="file-pdf-o" size={16} color="#fff" />
-          <Text style={styles.certBtnText}>Digital Health Certificate</Text>
+          <Text style={styles.certBtnText}>{t('animals.digitalCertificate', 'Digital Health Certificate')}</Text>
         </TouchableOpacity>
       </Animated.View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Digital Twin Timeline</Text>
+        <Text style={styles.sectionTitle}>{t('animals.digitalTwinTimeline', 'Digital Twin Timeline')}</Text>
         
         {animal.predictions?.length > 0 ? (
           animal.predictions.map((pred: any, index: number) => (
@@ -83,22 +85,22 @@ export default function AnimalProfileScreen() {
                   <Text style={styles.timelineDate}>{new Date(pred.createdAt).toLocaleDateString()}</Text>
                   {pred.recoveryStatus && <View style={styles.recoveryBadge}><Text style={styles.recoveryBadgeText}>{pred.recoveryStatus}</Text></View>}
                 </View>
-                <Text style={styles.timelineTitle}>AI Diagnosis Record</Text>
+                <Text style={styles.timelineTitle}>{t('animals.aiDiagnosisRecord', 'AI Diagnosis Record')}</Text>
                 
                 <View style={styles.dataRow}>
-                  <Text style={styles.timelineDesc}>Detected Issue:</Text>
+                  <Text style={styles.timelineDesc}>{t('animals.detectedIssue', 'Detected Issue:')}</Text>
                   <Text style={[styles.timelineDesc, { fontWeight: '700', color: COLORS.textMain }]}>{pred.disease}</Text>
                 </View>
                 
                 <View style={styles.dataRow}>
-                  <Text style={styles.timelineDesc}>Risk Level:</Text>
+                  <Text style={styles.timelineDesc}>{t('animals.riskLevel', 'Risk Level:')}</Text>
                   <Text style={[styles.timelineDesc, { color: COLORS.warning, fontWeight: '700' }]}>{pred.riskLevel}</Text>
                 </View>
                 
                 {!pred.recoveryStatus && (
                   <TouchableOpacity style={styles.recoveryBtn} activeOpacity={0.8}>
                     <FontAwesome name="check-circle" size={14} color={COLORS.primaryDark} />
-                    <Text style={styles.recoveryBtnText}>Log Recovery</Text>
+                    <Text style={styles.recoveryBtnText}>{t('animals.logRecovery', 'Log Recovery')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -107,8 +109,8 @@ export default function AnimalProfileScreen() {
         ) : (
           <View style={styles.emptyContainer}>
              <FontAwesome name="heartbeat" size={40} color={COLORS.borderMedium} style={{ marginBottom: SPACING.md }} />
-             <Text style={styles.emptyText}>No medical history yet.</Text>
-             <Text style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted, marginTop: 4 }}>This animal is currently healthy.</Text>
+             <Text style={styles.emptyText}>{t('animals.noMedicalHistory', 'No medical history yet.')}</Text>
+             <Text style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted, marginTop: 4 }}>{t('animals.currentlyHealthy', 'This animal is currently healthy.')}</Text>
           </View>
         )}
       </View>

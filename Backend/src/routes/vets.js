@@ -115,50 +115,9 @@ router.get('/nearby', requireAuth, async (req, res) => {
       }
     }
 
-    // Tier 3: Coordinate-based Realistic Generation Fallback (Ensures populated directory)
+    // Tier 3: Removed hardcoded generation fallback as requested
     if (finalVets.length === 0) {
-      console.log('Utilizing coordinate-based local clinic generation fallback...');
-      finalVets = [
-        {
-          id: 'gen_1',
-          name: 'Dr. Arjun More (B.V.Sc & A.H)',
-          phone: '+919011111112',
-          latitude: parseFloat(lat) + 0.015,
-          longitude: parseFloat(lon) - 0.01,
-          distance: 1800,
-          clinic: 'Government Block Animal Hospital',
-          available: true,
-          rating: 4.8,
-          address: 'Near Panchayat Office',
-          specialty: 'Foot-and-Mouth Disease Specialist'
-        },
-        {
-          id: 'gen_2',
-          name: 'Dr. Priya Kulkarni (M.V.Sc Medicine)',
-          phone: '+919011111113',
-          latitude: parseFloat(lat) - 0.008,
-          longitude: parseFloat(lon) + 0.012,
-          distance: 2100,
-          clinic: 'Pashu Swasthya Kendra & Mobile Clinic',
-          available: true,
-          rating: 4.9,
-          address: 'Main Highway Junction',
-          specialty: 'Dairy Cattle Nutrition & Health'
-        },
-        {
-          id: 'gen_3',
-          name: 'Dr. Rajesh Sharma (Senior Vet Officer)',
-          phone: '+919011111114',
-          latitude: parseFloat(lat) + 0.005,
-          longitude: parseFloat(lon) + 0.008,
-          distance: 900,
-          clinic: 'Zilla Parishad Veterinary Clinic',
-          available: false,
-          rating: 4.6,
-          address: 'Rural Veterinary Center',
-          specialty: 'Cattle Surgery & Epidemic Control'
-        }
-      ];
+      console.log('No local vets found in DB or OSM.');
     }
 
     // Sort all combined results by distance

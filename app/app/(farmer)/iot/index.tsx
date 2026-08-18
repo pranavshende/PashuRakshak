@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS } from '../../../constants/theme';
 import Animated, { FadeInDown, FadeInUp, useSharedValue, useAnimatedStyle, withTiming, Easing, withRepeat, withSequence } from 'react-native-reanimated';
 import Svg, { Circle, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const IS_WEB = Platform.OS === 'web';
@@ -77,6 +78,7 @@ const BiometricRing = ({ value, maxValue, color, title, unit, icon, delay = 0 }:
 
 export default function IoTSmartFarmScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   
   // GPS Ping Animation
   const pingScale = useSharedValue(1);
@@ -101,8 +103,8 @@ export default function IoTSmartFarmScreen() {
             <FontAwesome name="arrow-left" size={20} color={COLORS.textMain} />
           </TouchableOpacity>
           <View>
-            <Text style={styles.headerTitle}>Smart Farm</Text>
-            <Text style={styles.headerSubtitle}>IoT Collar Telemetry</Text>
+            <Text style={styles.headerTitle}>{t('iot.title', 'Smart Farm')}</Text>
+            <Text style={styles.headerSubtitle}>{t('iot.subtitle', 'IoT Collar Telemetry')}</Text>
           </View>
         </View>
         <View style={styles.statusBadge}>

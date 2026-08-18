@@ -4,6 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
 import Animated, { FadeInDown, FadeInUp, Layout } from 'react-native-reanimated';
 import { storage } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -16,6 +17,7 @@ const MOCK_VETS = [
 ];
 
 export default function VetManagementScreen() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [vets, setVets] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,7 +84,7 @@ export default function VetManagementScreen() {
           <FontAwesome name="search" size={16} color={COLORS.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by name or district..."
+            placeholder={t('admin.searchVets', 'Search by name or district...')}
             placeholderTextColor={COLORS.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -90,7 +92,7 @@ export default function VetManagementScreen() {
         </View>
         <TouchableOpacity style={GLOBAL_STYLES.btnPrimary}>
           <FontAwesome name="plus" size={14} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={GLOBAL_STYLES.btnText}>Invite Vet</Text>
+          <Text style={GLOBAL_STYLES.btnText}>{t('admin.addVet', 'Invite Vet')}</Text>
         </TouchableOpacity>
       </Animated.View>
 
@@ -109,7 +111,7 @@ export default function VetManagementScreen() {
           {filteredVets.length === 0 ? (
             <View style={styles.emptyState}>
               <FontAwesome name="inbox" size={40} color={COLORS.borderMedium} />
-              <Text style={{ ...TYPOGRAPHY.body, color: COLORS.textMuted, marginTop: SPACING.md }}>No veterinarians found.</Text>
+              <Text style={{ ...TYPOGRAPHY.body, color: COLORS.textMuted, marginTop: SPACING.md }}>{t('admin.noVets', 'No veterinarians found.')}</Text>
             </View>
           ) : (
             filteredVets.map((vet, index) => (

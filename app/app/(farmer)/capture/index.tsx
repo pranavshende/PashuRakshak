@@ -7,6 +7,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SPACING, SIZES, SHADOWS, GLOBAL_STYLES, TYPOGRAPHY } from '../../../constants/theme';
 import Animated, { FadeIn, FadeInDown, FadeOut, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const SCANNER_SIZE = width * 0.7;
@@ -67,6 +68,7 @@ export default function CaptureScreen() {
 
   const cameraRef = useRef<any>(null);
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Scanning animation
   const scanLineY = useSharedValue(0);
@@ -93,9 +95,9 @@ export default function CaptureScreen() {
           <View style={styles.permissionIconWrapper}>
             <FontAwesome name="camera" size={48} color={COLORS.primaryDark} />
           </View>
-          <Text style={[TYPOGRAPHY.h2, { textAlign: 'center' }]}>Camera Access Required</Text>
+          <Text style={[TYPOGRAPHY.h2, { textAlign: 'center' }]}>{t('capture.errorCamera', 'Camera Access Required')}</Text>
           <Text style={[TYPOGRAPHY.body, { textAlign: 'center', marginVertical: SPACING.lg, color: COLORS.textMuted }]}>
-            PashuRakshak requires camera access to use the AI disease detection scanner.
+            {t('capture.grantPermission', 'PashuRakshak requires camera access to use the AI disease detection scanner.')}
           </Text>
           <TouchableOpacity style={GLOBAL_STYLES.btnPrimary} onPress={requestPermission}>
             <Text style={GLOBAL_STYLES.btnText}>Grant Permission</Text>
@@ -167,7 +169,7 @@ export default function CaptureScreen() {
             <FontAwesome name="times" size={20} color="#fff" />
           </TouchableOpacity>
           <View style={styles.instructionPill}>
-            <Text style={styles.instructionText}>Center the lesion in frame</Text>
+            <Text style={styles.instructionText}>{t('capture.captureInstruction', 'Center the lesion in frame')}</Text>
           </View>
           <TouchableOpacity style={styles.iconBtn} onPress={toggleFlash}>
             <FontAwesome name={flash === 'on' ? 'flash' : 'bolt'} size={20} color={flash === 'on' ? '#FCD34D' : '#fff'} />
@@ -285,7 +287,7 @@ export default function CaptureScreen() {
           {isAnalyzing ? (
             <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.analyzingContainer}>
               <ActivityIndicator size="large" color="#059669" />
-              <Text style={styles.analyzingText}>Analyzing with {currentModel.label}...</Text>
+              <Text style={styles.analyzingText}>{t('capture.analyzing', 'Analyzing...')}</Text>
             </Animated.View>
           ) : (
             <View style={styles.actionRow}>

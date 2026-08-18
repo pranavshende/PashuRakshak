@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS } from '../../constants/theme';
 import Animated, { FadeInUp, FadeInDown, useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, cancelAnimation } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -126,6 +127,7 @@ function MovingNewsTicker({ newsList }: { newsList: any[] }) {
 export default function DashboardScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [newsList, setNewsList] = useState<any[]>([]);
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:5000';
@@ -185,10 +187,10 @@ export default function DashboardScreen() {
         <View style={styles.headerUserRow}>
           <TouchableOpacity onPress={() => router.push('/(farmer)/two' as any)} activeOpacity={0.9}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.headerGreeting}>Hello, {user?.name?.split(' ')[0] || 'Pranav'}</Text>
+              <Text style={styles.headerGreeting}>{t('dashboard.morning', 'Hello')}, {user?.name?.split(' ')[0] || 'Pranav'}</Text>
               <Text style={{ fontSize: 16 }}>👋</Text>
             </View>
-            <Text style={styles.headerSubtext}>Welcome back to PashuRakshak</Text>
+            <Text style={styles.headerSubtext}>{t('dashboard.overviewSubtitle', 'Welcome back to PashuRakshak')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.headerLocationTag} onPress={() => router.push('/(farmer)/community' as any)} activeOpacity={0.8}>
@@ -237,9 +239,9 @@ export default function DashboardScreen() {
               <FontAwesome name="camera" size={24} color="#059669" />
             </View>
             <View style={{ flex: 1, paddingHorizontal: SPACING.md }}>
-              <Text style={styles.scanCardTitle}>Scan Cattle</Text>
-              <Text style={styles.scanCardSub}>Instant AI health analysis</Text>
-              <Text style={styles.scanCardDesc}>Detect diseases early and protect your herd</Text>
+              <Text style={styles.scanCardTitle}>{t('dashboard.aiHealthScan', 'Scan Cattle')}</Text>
+              <Text style={styles.scanCardSub}>{t('dashboard.aiHealthScanDesc', 'Instant AI health analysis')}</Text>
+              <Text style={styles.scanCardDesc}>{t('dashboard.quickActions', 'Detect diseases early and protect your herd')}</Text>
             </View>
             <View style={styles.scanArrowBtn}>
               <FontAwesome name="chevron-right" size={14} color="#fff" />

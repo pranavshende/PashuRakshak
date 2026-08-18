@@ -5,12 +5,14 @@ import { FontAwesome } from '@expo/vector-icons';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../constants/theme';
 import Animated, { FadeInUp, FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { storage } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const IS_WEB = Platform.OS === 'web';
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
 
   // Mock data for analytics
@@ -63,7 +65,7 @@ export default function AdminDashboardScreen() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.backgroundBase }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted, marginTop: SPACING.md }}>Loading Command Center...</Text>
+        <Text style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted, marginTop: SPACING.md }}>{t('admin.loading', 'Loading Command Center...')}</Text>
       </View>
     );
   }
@@ -74,7 +76,7 @@ export default function AdminDashboardScreen() {
       {/* Header Actions */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.welcomeText}>Welcome back, Admin</Text>
+          <Text style={styles.welcomeText}>{t('admin.welcomeAdmin', 'Welcome back, Admin')}</Text>
           <Text style={styles.dateText}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</Text>
         </View>
         <TouchableOpacity 
@@ -83,7 +85,7 @@ export default function AdminDashboardScreen() {
           activeOpacity={0.8}
         >
           <FontAwesome name="users" size={16} color="#fff" />
-          <Text style={styles.manageVetsText}>Manage Network</Text>
+          <Text style={styles.manageVetsText}>{t('admin.manageNetwork', 'Manage Network')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -94,7 +96,7 @@ export default function AdminDashboardScreen() {
             <FontAwesome name="camera" size={24} color={COLORS.secondary} />
           </View>
           <Text style={styles.kpiValue}>{stats.totalScans.toLocaleString()}</Text>
-          <Text style={styles.kpiLabel}>Total Scans</Text>
+          <Text style={styles.kpiLabel}>{t('admin.totalScans', 'Total Scans')}</Text>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(200).springify()} style={[styles.kpiCard, { width: IS_WEB ? '23%' : '48%' }]}>
@@ -102,7 +104,7 @@ export default function AdminDashboardScreen() {
             <FontAwesome name="warning" size={24} color={COLORS.error} />
           </View>
           <Text style={[styles.kpiValue, { color: COLORS.error }]}>{stats.highRisk.toLocaleString()}</Text>
-          <Text style={styles.kpiLabel}>High Risk Alerts</Text>
+          <Text style={styles.kpiLabel}>{t('admin.highRisk', 'High Risk')}</Text>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(300).springify()} style={[styles.kpiCard, { width: IS_WEB ? '23%' : '48%' }]}>
@@ -110,7 +112,7 @@ export default function AdminDashboardScreen() {
             <FontAwesome name="user-md" size={24} color={COLORS.primary} />
           </View>
           <Text style={styles.kpiValue}>{stats.activeVets.toLocaleString()}</Text>
-          <Text style={styles.kpiLabel}>Active Vets</Text>
+          <Text style={styles.kpiLabel}>{t('admin.activeVets', 'Active Vets')}</Text>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(400).springify()} style={[styles.kpiCard, { width: IS_WEB ? '23%' : '48%' }]}>
@@ -118,7 +120,7 @@ export default function AdminDashboardScreen() {
             <FontAwesome name="users" size={24} color={COLORS.warning} />
           </View>
           <Text style={styles.kpiValue}>{stats.farmers.toLocaleString()}</Text>
-          <Text style={styles.kpiLabel}>Registered Farmers</Text>
+          <Text style={styles.kpiLabel}>{t('admin.farmers', 'Farmers')}</Text>
         </Animated.View>
       </View>
 
@@ -143,7 +145,7 @@ export default function AdminDashboardScreen() {
         <Animated.View entering={FadeInRight.delay(600).springify()} style={styles.rightCol}>
           <View style={styles.sectionCard}>
             <View style={styles.feedHeader}>
-              <Text style={styles.sectionTitle}>Live Scan Feed</Text>
+              <Text style={styles.sectionTitle}>{t('admin.liveFeed', 'Live Scan Feed')}</Text>
               <View style={styles.liveIndicator}>
                 <View style={styles.liveDot} />
                 <Text style={styles.liveText}>LIVE</Text>

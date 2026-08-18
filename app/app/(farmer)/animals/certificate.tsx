@@ -5,8 +5,10 @@ import { FontAwesome } from '@expo/vector-icons';
 import { COLORS, SPACING, SIZES, TYPOGRAPHY, SHADOWS, GLOBAL_STYLES } from '../../../constants/theme';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { storage } from '../../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function CertificateScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams();
   const [animal, setAnimal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,7 @@ export default function CertificateScreen() {
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <FontAwesome name="arrow-left" size={20} color={COLORS.textMain} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Digital Certificate</Text>
+          <Text style={styles.headerTitle}>{t('animals.digitalCertificate', 'Digital Certificate')}</Text>
         </View>
         <TouchableOpacity onPress={handlePrint} style={styles.printBtn} activeOpacity={0.8}>
           <FontAwesome name="share-alt" size={16} color={COLORS.primaryDark} />
@@ -67,8 +69,8 @@ export default function CertificateScreen() {
                 <FontAwesome name="shield" size={32} color="#fff" />
               </View>
               <View>
-                <Text style={styles.certTitle}>HEALTH CERTIFICATE</Text>
-                <Text style={styles.certSubtitle}>PashuRakshak Verified ID</Text>
+                <Text style={styles.certTitle}>{t('animals.certTitle', 'HEALTH CERTIFICATE')}</Text>
+                <Text style={styles.certSubtitle}>{t('animals.certSubtitle', 'PashuRakshak Verified ID')}</Text>
               </View>
             </View>
             <View style={styles.qrPlaceholder}>
@@ -77,27 +79,27 @@ export default function CertificateScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>ANIMAL IDENTIFICATION</Text>
+            <Text style={styles.sectionHeader}>{t('animals.animalIdentification', 'ANIMAL IDENTIFICATION')}</Text>
             <View style={styles.row}>
-              <Text style={styles.label}>Tag ID Number:</Text>
+              <Text style={styles.label}>{t('animals.tagIdNumber', 'Tag ID Number:')}</Text>
               <Text style={styles.valuePrimary}>{animal.tagId}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.label}>Name / Alias:</Text>
+              <Text style={styles.label}>{t('animals.nameAlias', 'Name / Alias:')}</Text>
               <Text style={styles.value}>{animal.name || 'N/A'}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.label}>Breed:</Text>
+              <Text style={styles.label}>{t('animals.breed', 'Breed:')}</Text>
               <Text style={styles.value}>{animal.breed || 'N/A'}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.label}>Current Weight:</Text>
+              <Text style={styles.label}>{t('animals.currentWeight', 'Current Weight:')}</Text>
               <Text style={styles.value}>{animal.weight ? `${animal.weight} kg` : 'N/A'}</Text>
             </View>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>VACCINATION RECORD</Text>
+            <Text style={styles.sectionHeader}>{t('animals.vaccinationRecord', 'VACCINATION RECORD')}</Text>
             {animal.vaccinations?.length > 0 ? (
               animal.vaccinations.map((vax: any) => (
                 <View key={vax.id} style={styles.historyRow}>
@@ -106,12 +108,12 @@ export default function CertificateScreen() {
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No verified vaccinations recorded.</Text>
+              <Text style={styles.emptyText}>{t('animals.noVaccinations', 'No verified vaccinations recorded.')}</Text>
             )}
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>MEDICAL CLEARANCE</Text>
+            <Text style={styles.sectionHeader}>{t('animals.medicalClearance', 'MEDICAL CLEARANCE')}</Text>
             {animal.predictions?.length > 0 ? (
               animal.predictions.map((pred: any) => (
                 <View key={pred.id} style={styles.historyRow}>
@@ -122,25 +124,25 @@ export default function CertificateScreen() {
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>Clean bill of health. No diseases detected.</Text>
+              <Text style={styles.emptyText}>{t('animals.cleanHealth', 'Clean bill of health. No diseases detected.')}</Text>
             )}
           </View>
 
           <View style={styles.stampContainer}>
             <View style={styles.verifiedStamp}>
               <FontAwesome name="check-circle" size={16} color={COLORS.success} />
-              <Text style={styles.verifiedText}>DIGITALLY VERIFIED</Text>
+              <Text style={styles.verifiedText}>{t('animals.digitallyVerified', 'DIGITALLY VERIFIED')}</Text>
             </View>
-            <Text style={styles.timestamp}>Generated: {new Date().toLocaleDateString()}</Text>
+            <Text style={styles.timestamp}>{t('animals.generated', 'Generated:')} {new Date().toLocaleDateString()}</Text>
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>This is a digitally generated certificate based on AI scanning and farmer records. For official insurance claims, secondary verification by a licensed veterinarian may be required.</Text>
+            <Text style={styles.footerText}>{t('animals.certFooter', 'This is a digitally generated certificate based on AI scanning and farmer records. For official insurance claims, secondary verification by a licensed veterinarian may be required.')}</Text>
           </View>
         </Animated.View>
 
         <TouchableOpacity style={GLOBAL_STYLES.btnPrimary} onPress={handlePrint}>
-          <Text style={GLOBAL_STYLES.btnText}>Download PDF</Text>
+          <Text style={GLOBAL_STYLES.btnText}>{t('animals.downloadPdf', 'Download PDF')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
